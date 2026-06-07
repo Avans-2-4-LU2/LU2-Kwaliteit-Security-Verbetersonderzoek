@@ -142,3 +142,35 @@ This reduces the risk of accidental or unauthorized deployments and ensures that
 ## Security Rationale
 
 The approval gates implement the four-eyes principle by requiring independent review before changes are merged or deployed. This improves traceability, supports change management, and reduces the risk of unauthorized or insecure changes reaching production.
+
+# Code Scanning
+
+## Purpose
+
+CodeQL code scanning is configured to automatically detect security vulnerabilities
+and coding errors before they reach protected branches or production.
+
+## Configuration
+
+| Setting        | Value                              |
+| -------------- | ---------------------------------- |
+| Setup Type     | Advanced setup                     |
+| Languages      | Java / Kotlin, JavaScript / TypeScript |
+| Query Suite    | Default                            |
+| Scan on push   | main, Development                  |
+| Scan on PR     | main, Development                  |
+| Scheduled scan | Weekly (main)                      |
+
+## Security Rationale
+
+CodeQL scanning is integrated into the development workflow to identify
+security vulnerabilities early in the development lifecycle. By scanning
+on every Pull Request targeting `main` and `Development`, vulnerable code
+is flagged before it is merged.
+
+The scheduled weekly scan ensures that newly discovered vulnerabilities
+are detected even without new commits, for example when new CVEs are
+published for existing code patterns.
+
+These measures support secure software development practices and contribute
+to compliance with NEN 7510.
