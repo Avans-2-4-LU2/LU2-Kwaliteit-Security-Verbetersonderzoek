@@ -107,3 +107,38 @@ The environment setup supports secure development and change management practice
 * Maintaining traceability through GitHub workflows and Pull Requests
 
 These measures contribute to compliance with secure software development principles described in NEN 7510.
+
+---
+
+# Approval Gates
+
+## Purpose
+
+Approval gates are used to ensure that changes are reviewed and approved before they are merged into protected branches or deployed to production environments.
+
+## Pull Request Approval
+
+The repository uses branch protection rules to prevent direct changes to protected branches.
+
+Configuration:
+
+* Pull Requests are required before merging.
+* At least one approval is required before merging.
+* Force pushes are blocked.
+
+This ensures that code changes are independently reviewed before being integrated into the project.
+
+## Production Deployment Approval
+
+The production environment requires manual approval before deployment.
+
+Configuration:
+
+* Production deployments require a reviewer.
+* Administrator bypass is disabled.
+
+This reduces the risk of accidental or unauthorized deployments and ensures that deployments follow the defined change management process.
+
+## Security Rationale
+
+The approval gates implement the four-eyes principle by requiring independent review before changes are merged or deployed. This improves traceability, supports change management, and reduces the risk of unauthorized or insecure changes reaching production.
