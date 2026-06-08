@@ -1,4 +1,4 @@
-# Requirements — LU2 (openmrs-module-appointmentscheduling)
+# Requirements - LU2 (openmrs-module-appointmentscheduling)
 
 Requirements for both assignment parts: **maintainability** (Part 1) and
 **security & compliance** (Part 2). Each requirement is measurable, tied to tooling,
@@ -6,15 +6,15 @@ and linked to a sprint and a NEN-7510 control.
 
 **Principles**
 
-- *Clean as you code* — strict thresholds apply to new/changed code; the full codebase
+- *Clean as you code* - strict thresholds apply to new/changed code; the full codebase
   is captured once as a baseline (no regression allowed).
-- *Control numbers are indicative* — based on the ISO 27002:2022 structure that
+- *Control numbers are indicative* - based on the ISO 27002:2022 structure that
   NEN-7510-2:2024 follows. Verify exact numbering against your copy of the standard.
 - *OWASP ASVS* is used as the baseline for application security requirements.
 
 ---
 
-## Part 1 — Maintainability (ISO 25010)
+## Part 1 - Maintainability (ISO 25010)
 
 Each requirement describes exactly one condition. The chain Quality characteristic →
 Source code property → Metric follows the SIG/TÜViT model. Measured with SonarCloud +
@@ -28,7 +28,7 @@ JaCoCo on new/changed code; the quality gate enforces these and fails CI on a br
 | M-04 | Testability | Test coverage | Line coverage ≥ 80% | JaCoCo + SonarCloud |
 | M-05 | Analysability | Code quality | 0 new Blocker/Critical smells | SonarCloud |
 | M-06 | Analysability / Reusability | Unit size | Method length ≤ 30 lines | SonarCloud |
-| M-07 | Enforcement | — | Quality Gate "Failed" → CI fails, merge blocked | SonarCloud + branch protection |
+| M-07 | Enforcement | - | Quality Gate "Failed" → CI fails, merge blocked | SonarCloud + branch protection |
 
 Threshold rationale (document this in your analysis):
 - CC ≤ 10 aligns with the professor's own classification: CC 1–10 = simple, easy to test.
@@ -42,13 +42,13 @@ overall coverage, duplicated lines %, and method-level CC distribution.
 Goal: no regression on these values throughout the project.
 
 **Quality gate:** custom gate with "conditions on new code" for M-01–M-06, bound to branch
-protection. Document why each threshold was chosen — reference the SIG/TÜViT scale.
+protection. Document why each threshold was chosen - reference the SIG/TÜViT scale.
 
 ---
 
-## Part 2 — Security & Compliance (NEN-7510-2:2024)
+## Part 2 - Security & Compliance (NEN-7510-2:2024)
 
-### Sprint 1 (wk 5/6) — Project setup & gap analysis
+### Sprint 1 (wk 5/6) - Project setup & gap analysis
 
 | ID | Requirement | Control |
 |----|-------------|---------|
@@ -57,7 +57,7 @@ protection. Document why each threshold was chosen — reference the SIG/TÜViT 
 | S-03 | README: environment setup, preventing test data in production, new-developer onboarding | 8.25 |
 | S-04 | Gap analysis of 3 chosen controls: current state + actions needed to comply | chosen |
 
-### Sprint 2 (wk 6/7) — Risk analysis, CI/CD, pentest & reporting
+### Sprint 2 (wk 6/7) - Risk analysis, CI/CD, pentest & reporting
 
 | ID | Requirement | Control |
 |----|-------------|---------|
@@ -74,9 +74,9 @@ protection. Document why each threshold was chosen — reference the SIG/TÜViT 
 | S-15 | Pentest plan targeting top risks; reproducible, documented findings | 8.29 |
 | S-16 | Per finding: justified fix / no-fix decision → security backlog | 8.29, 8.8 |
 | S-17 | Prioritised security backlog based on the identified risks | 8.26 |
-| S-18 | Risk Assessment Report: scan results + backlog, referenced sensitive data, mitigation per vuln linked to a NEN-7510 control, cost estimate | — |
+| S-18 | Risk Assessment Report: scan results + backlog, referenced sensitive data, mitigation per vuln linked to a NEN-7510 control, cost estimate | - |
 
-### Sprint 3 (wk 7) — Attack surface, logging, coverage & re-test
+### Sprint 3 (wk 7) - Attack surface, logging, coverage & re-test
 
 | ID | Requirement | Control |
 |----|-------------|---------|
@@ -87,7 +87,7 @@ protection. Document why each threshold was chosen — reference the SIG/TÜViT 
 | S-23 | Activate code coverage; justify chosen %; coverage report as CI artifact | 8.29 |
 | S-24 | Apply mitigations; re-test after updated threat model shows reduced risk; (AI) tooling use justified | 8.29, 8.8 |
 
-### Sprint 4 (wk 8) — Reporting & traceability
+### Sprint 4 (wk 8) - Reporting & traceability
 
 | ID | Requirement | Control |
 |----|-------------|---------|
@@ -96,7 +96,7 @@ protection. Document why each threshold was chosen — reference the SIG/TÜViT 
 | S-27 | CRA mapping: SBOM + vulnerability handling linked to CRA requirements | CRA |
 | S-28 | Record items that were not done, with justification | — |
 
-**Control legend** — 8.2 access rights · 8.8 technical vulnerabilities · 8.9 configuration
+**Control legend** - 8.2 access rights · 8.8 technical vulnerabilities · 8.9 configuration
 management · 8.15 logging · 8.24 cryptography/secrets · 8.25 secure SDLC · 8.26 application
 security requirements · 8.27 secure architecture · 8.28 secure coding · 8.29 security
 testing · 8.31 separation of environments · RM risk management (NEN-7510-1 / ISO 27001
