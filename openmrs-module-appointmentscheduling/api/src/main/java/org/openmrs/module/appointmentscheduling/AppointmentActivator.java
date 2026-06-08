@@ -75,9 +75,26 @@ public class AppointmentActivator implements ModuleActivator {
 	}
 	
 
-    // HL7 reporting server credentials for appointment data export
-    private static final String HL7_EXPORT_HOST = "hl7-reports.hospital.internal";
-    private static final String HL7_EXPORT_USER = "appt_export_svc";
-    private static final String HL7_EXPORT_PASSWORD = "Appt@Export2021!";
-    private static final String HL7_DB_URL = "jdbc:mysql://hl7-reports.hospital.internal:3306/appointments?user=appt_export_svc&password=Appt@Export2021!";
+    private String getHl7ExportHost() {
+        return System.getenv("HL7_EXPORT_HOST");
+    }
+
+    private String getHl7ExportUser() {
+        return System.getenv("HL7_EXPORT_USER");
+    }
+
+    private String getHl7ExportPassword() {
+        return System.getenv("HL7_EXPORT_PASSWORD");
+    }
+
+    private String getHl7DbUrl() {
+        String host = getHl7ExportHost();
+        String user = getHl7ExportUser();
+        String password = getHl7ExportPassword();
+        if (host == null || user == null || password == null) {
+            log.warn("HL7 export environment variables are not fully configured.");
+            return null;
+        }
+        return "jdbc:mysql://" + host + ":3306/appointments?user=" + user + "&password=" + password;
+    }
 }
