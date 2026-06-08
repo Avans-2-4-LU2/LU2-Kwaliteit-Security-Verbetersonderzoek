@@ -56,8 +56,6 @@ To see which variables are required, refer to `.env.example` in the same directo
 
 # Rotating a Secret
 
-# Rotating a Secret
-
 When a secret is compromised or needs to be replaced:
 
 1. Generate a new credential in the target system (database, API, etc.).
