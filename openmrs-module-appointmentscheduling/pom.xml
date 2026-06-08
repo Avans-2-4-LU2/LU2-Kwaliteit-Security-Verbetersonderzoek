@@ -139,6 +139,17 @@
 		<pluginManagement>
 			<plugins>
 				<plugin>
+					<groupId>org.cyclonedx</groupId>
+					<artifactId>cyclonedx-maven-plugin</artifactId>
+					<version>2.7.9</version>
+					<configuration>
+						<outputFormat>json</outputFormat>
+						<outputName>bom</outputName>
+						<outputDirectory>${project.basedir}</outputDirectory>
+						<includeTestScope>false</includeTestScope>
+					</configuration>
+				</plugin>
+				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-compiler-plugin</artifactId>
 					<configuration>
