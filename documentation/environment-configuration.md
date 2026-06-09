@@ -139,6 +139,10 @@ Configuration:
 
 This reduces the risk of accidental or unauthorized deployments and ensures that deployments follow the defined change management process.
 
+## Security Rationale
+
+The approval gates implement the four-eyes principle by requiring independent review before changes are merged or deployed. This improves traceability, supports change management, and reduces the risk of unauthorized or insecure changes reaching production.
+
 # Dependency Management
 
 ## Purpose
@@ -176,6 +180,3 @@ Dependency update Pull Requests follow the same approval process as code
 changes, ensuring that dependency updates are independently reviewed before
 being merged. This maintains traceability and supports secure software
 development practices.
-## Security Rationale
-
-The approval gates implement the four-eyes principle by requiring independent review before changes are merged or deployed. This improves traceability, supports change management, and reduces the risk of unauthorized or insecure changes reaching production.
