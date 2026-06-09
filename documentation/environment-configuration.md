@@ -110,6 +110,19 @@ These measures contribute to compliance with secure software development princip
 
 ---
 
+
+# Secret Management
+
+Secrets (passwords, API keys, connection strings) are stored outside of version control and loaded at runtime via environment variables. They are never hardcoded in source files, `pom.xml`, or any file tracked by git.
+
+Each environment uses its own isolated set of secrets, enforced through GitHub Actions environment secrets scoped per environment. This ensures test credentials never reach production and production credentials are never accessible during development or testing.
+
+Secret scanning is enabled on the repository (GitHub Advanced Security) to automatically detect and alert on any credentials accidentally committed to source code.
+
+**NEN-7510**: Separate environment secrets address access control (chapter 9) and secure development (chapter 14) by ensuring no single set of credentials spans environments and no credentials are exposed through source code or git history.
+
+---
+
 # Approval Gates
 
 ## Purpose
