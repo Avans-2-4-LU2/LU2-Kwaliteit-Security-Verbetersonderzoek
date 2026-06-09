@@ -64,12 +64,6 @@ nbactions.xml
 nb-configuration.xml
 ################
 
-
-### Secrets ###
-.env
-*.env
-!.env.example
-
 ### Project specific files ###
 api/.classpath
 api/.project
