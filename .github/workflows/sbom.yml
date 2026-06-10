@@ -1,0 +1,53 @@
+name: "SBOM & SCA"
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+workflow_dispatch:
+
+jobs:
+  sbom-sca:
+    name: Generate SBOM and run SCA scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
+        with:
+          java-version: '8'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Generate SBOM
+        working-directory: openmrs-module-appointmentscheduling
+        run: mvn --batch-mode org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom
+
+      - name: Run Grype SCA scan
+        uses: anchore/scan-action@v3
+        with:
+          sbom: openmrs-module-appointmentscheduling/bom.json
+          output-format: json
+          fail-build: false
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sbom-${{ github.sha }}
+          path: openmrs-module-appointmentscheduling/bom.json
+          retention-days: 90
+
+      - name: Upload SCA report artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sca-report-${{ github.sha }}
+          path: results.json
+          retention-days: 90
