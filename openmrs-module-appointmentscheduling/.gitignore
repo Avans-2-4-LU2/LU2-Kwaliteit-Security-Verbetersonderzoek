@@ -79,3 +79,5 @@ omod/.project
 omod/.settings/*
 omod/target/*
 
+
+grype.exe
