@@ -14,7 +14,61 @@ and linked to a sprint and a NEN-7510 control.
 
 ---
 
-## Part 1 - Maintainability (ISO 25010)
+## Functional Requirements (FR)
+
+What the system and project must produce, implement, or enable.
+
+### Sprint 1 (wk 5/6) - Project setup & gap analysis
+
+| ID | Requirement | Control |
+|----|-------------|---------|
+| S-01 | Separate test & production environments (GitHub Environments); separate config + secrets | 8.31, 8.9, 8.24 |
+| S-02 | Branch protection rules + approval gates on production deployment | 8.31, 8.2 |
+| S-03 | README: environment setup, preventing test data in production, new-developer onboarding | 8.25 |
+| S-04 | Gap analysis of 3 chosen controls: current state + actions needed to comply | chosen |
+
+### Sprint 2 (wk 6/7) - Risk analysis, CI/CD, pentest & reporting
+
+| ID | Requirement | Control |
+|----|-------------|---------|
+| S-05 | CIA analysis: identify crown jewels (with references) and the sensitive data processed | RM |
+| S-07 | Threat model with C4 diagrams (context/container/component); threats identified (e.g. STRIDE) | 8.27, 8.25 |
+| S-08 | Risk matrix of identified risks | 8.27 |
+| S-09 | Bow-tie for top risks (preventive + corrective controls) | 8.27 |
+| S-10 | SAST in the pipeline; build fails above threshold | 8.28, 8.29 |
+| S-11 | SCA on dependencies; CVEs drive update advice prioritised by CVSS | 8.8 |
+| S-12 | SBOM per build (e.g. CycloneDX) — for NEN-7510 and CRA | 8.8 |
+| S-14 | Risk evaluation of the CI/CD process itself (risk matrix + bow-tie) | 8.25 |
+| S-15 | Pentest plan targeting top risks; reproducible, documented findings | 8.29 |
+| S-16 | Per finding: justified fix / no-fix decision → security backlog | 8.29, 8.8 |
+| S-17 | Prioritised security backlog based on the identified risks | 8.26 |
+| S-18 | Risk Assessment Report: scan results + backlog, referenced sensitive data, mitigation per vuln linked to a NEN-7510 control, cost estimate | - |
+
+### Sprint 3 (wk 7) - Attack surface, logging, coverage & re-test
+
+| ID | Requirement | Control |
+|----|-------------|---------|
+| S-19 | Attack surface map: all entry points + implicit trust, high-risk flagged; threat model updated | 8.26 |
+| S-20 | Logging gap analysis vs control 8.15 (event / logged? / sensitive data / compliant); focus on unlogged events | 8.15 |
+| S-21 | Complete logging to comply with 8.15; no sensitive data in logs | 8.15 |
+| S-24 | Apply mitigations; re-test after updated threat model shows reduced risk; (AI) tooling use justified | 8.29, 8.8 |
+
+### Sprint 4 (wk 8) - Reporting & traceability
+
+| ID | Requirement | Control |
+|----|-------------|---------|
+| S-25 | Traceability matrix: ≥ 3 controls, each piece of evidence a traceable artifact | cl. 9 |
+| S-26 | Audit report (Exec Summary, Scope & Context, Methodology, Risk analysis ≥ 4 findings, SBOM & supply chain, Conclusion & Advice + appendices) | cl. 9 |
+| S-27 | CRA mapping: SBOM + vulnerability handling linked to CRA requirements | CRA |
+| S-28 | Record items that were not done, with justification | — |
+
+---
+
+## Non-Functional Requirements (NFR)
+
+Quality attributes, measurable thresholds, and process constraints.
+
+### Maintainability (ISO 25010 / SIG-TÜViT)
 
 Each requirement describes exactly one condition. The chain Quality characteristic →
 Source code property → Metric follows the SIG/TÜViT model. Measured with SonarCloud +
@@ -44,57 +98,14 @@ Goal: no regression on these values throughout the project.
 **Quality gate:** custom gate with "conditions on new code" for M-01–M-06, bound to branch
 protection. Document why each threshold was chosen - reference the SIG/TÜViT scale.
 
----
-
-## Part 2 - Security & Compliance (NEN-7510-2:2024)
-
-### Sprint 1 (wk 5/6) - Project setup & gap analysis
+### Security (NEN-7510-2:2024)
 
 | ID | Requirement | Control |
 |----|-------------|---------|
-| S-01 | Separate test & production environments (GitHub Environments); separate config + secrets | 8.31, 8.9, 8.24 |
-| S-02 | Branch protection rules + approval gates on production deployment | 8.31, 8.2 |
-| S-03 | README: environment setup, preventing test data in production, new-developer onboarding | 8.25 |
-| S-04 | Gap analysis of 3 chosen controls: current state + actions needed to comply | chosen |
-
-### Sprint 2 (wk 6/7) - Risk analysis, CI/CD, pentest & reporting
-
-| ID | Requirement | Control |
-|----|-------------|---------|
-| S-05 | CIA analysis: identify crown jewels (with references) and the sensitive data processed | RM |
 | S-06 | Risk criteria: scoring scale, risk appetite, thresholds | RM |
-| S-07 | Threat model with C4 diagrams (context/container/component); threats identified (e.g. STRIDE) | 8.27, 8.25 |
-| S-08 | Risk matrix of identified risks | 8.27 |
-| S-09 | Bow-tie for top risks (preventive + corrective controls) | 8.27 |
-| S-10 | SAST in the pipeline; build fails above threshold | 8.28, 8.29 |
-| S-11 | SCA on dependencies; CVEs drive update advice prioritised by CVSS | 8.8 |
-| S-12 | SBOM per build (e.g. CycloneDX) — for NEN-7510 and CRA | 8.8 |
 | S-13 | Documented policy for handling false positives | 8.8 |
-| S-14 | Risk evaluation of the CI/CD process itself (risk matrix + bow-tie) | 8.25 |
-| S-15 | Pentest plan targeting top risks; reproducible, documented findings | 8.29 |
-| S-16 | Per finding: justified fix / no-fix decision → security backlog | 8.29, 8.8 |
-| S-17 | Prioritised security backlog based on the identified risks | 8.26 |
-| S-18 | Risk Assessment Report: scan results + backlog, referenced sensitive data, mitigation per vuln linked to a NEN-7510 control, cost estimate | - |
-
-### Sprint 3 (wk 7) - Attack surface, logging, coverage & re-test
-
-| ID | Requirement | Control |
-|----|-------------|---------|
-| S-19 | Attack surface map: all entry points + implicit trust, high-risk flagged; threat model updated | 8.26 |
-| S-20 | Logging gap analysis vs control 8.15 (event / logged? / sensitive data / compliant); focus on unlogged events | 8.15 |
-| S-21 | Complete logging to comply with 8.15; no sensitive data in logs | 8.15 |
 | S-22 | Logging tests: successful + failed actions, absence of sensitive data; all pass | 8.15, 8.29 |
 | S-23 | Activate code coverage; justify chosen %; coverage report as CI artifact | 8.29 |
-| S-24 | Apply mitigations; re-test after updated threat model shows reduced risk; (AI) tooling use justified | 8.29, 8.8 |
-
-### Sprint 4 (wk 8) - Reporting & traceability
-
-| ID | Requirement | Control |
-|----|-------------|---------|
-| S-25 | Traceability matrix: ≥ 3 controls, each piece of evidence a traceable artifact | cl. 9 |
-| S-26 | Audit report (Exec Summary, Scope & Context, Methodology, Risk analysis ≥ 4 findings, SBOM & supply chain, Conclusion & Advice + appendices) | cl. 9 |
-| S-27 | CRA mapping: SBOM + vulnerability handling linked to CRA requirements | CRA |
-| S-28 | Record items that were not done, with justification | — |
 
 **Control legend** - 8.2 access rights · 8.8 technical vulnerabilities · 8.9 configuration
 management · 8.15 logging · 8.24 cryptography/secrets · 8.25 secure SDLC · 8.26 application
