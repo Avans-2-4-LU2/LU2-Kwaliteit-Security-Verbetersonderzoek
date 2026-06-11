@@ -42,6 +42,19 @@ Because it evaluates only the dependency **diff** of the PR, the pre-existing pl
 
 ---
 
+## Verification
+
+The gate was tested by adding a known-vulnerable dependency to a throwaway pull request:
+
+- **Test dependency:** `org.apache.logging.log4j:log4j-core:2.14.1`
+- **Result:** the `Review dependency changes` check **failed**, reporting 1 vulnerable package with 2 Critical and 1 High vulnerability (including CVE-2021-44228, "Log4Shell"). The merge was blocked.
+- **Date:** 2026-06-11
+- **Cleanup:** the test PR was closed without merging and the branch deleted; the vulnerable dependency never reached `dev` or `main`.
+
+This confirms the gate blocks new vulnerable dependencies, not merely reports them. The two "unknown license" warnings shown in the same run refer to the GitHub Actions themselves (`actions/checkout`, `actions/dependency-review-action`); these are informational and are **not** blocked - the deny-list policy only fails on explicitly forbidden licenses, by design.
+
+---
+
 ## NEN-7510:2024-2 mapping
 
 | Control | How this control satisfies it |
@@ -58,4 +71,5 @@ Because it evaluates only the dependency **diff** of the PR, the pre-existing pl
 |------|----------|
 | Workflow definition | `.github/workflows/dependency-review.yml` |
 | PR check / comment output | Pull request "Review dependency changes" check (audit trail) |
+| Blocking-test result | Failed check on the log4j-core 2.14.1 test PR (see Verification) |
 | Required-check enforcement | Branch ruleset for `main` / `dev` (`branch-protection-documentation.md`) |
