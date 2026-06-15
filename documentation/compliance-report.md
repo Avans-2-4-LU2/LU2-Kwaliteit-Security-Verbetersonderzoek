@@ -14,7 +14,9 @@ The control selection follows the relevant-controls list from workshop WS02 (cha
 
 ## 3. Note on evidence
 
-Controls enforced through GitHub settings have been verified live (branch ruleset, Advanced Security, Environments) and screenshots are stored in `documentation/evidence/`. Two organisation-level items (MFA enforcement, SSO) and the Actions retention setting still need to be confirmed by an organisation owner and are flagged below.
+Controls enforced through GitHub settings (branch ruleset, Advanced Security, Environments, organisation 2FA, Actions retention) were verified directly in the live repository and organisation settings. Each control references its supporting documentation file inline, and §7 records which live settings were checked.
+
+> **To confirm with the professors:** whether screenshots of these live settings should be attached as additional evidence. Until that is decided, this report deliberately relies on the inline file references and the verification record in §7 - it does **not** embed or depend on screenshots.
 
 ---
 
@@ -109,15 +111,15 @@ During penetration-test setup it was found that no CI stage performs a real `jav
 | Cloud services | SSO unconfirmed (needs org owner); retention set to 90 days (org max) | 5.23 |
 | Business continuity | No backup/DR procedure, no RTO/RPO | 5.30 |
 
-## 7. Evidence
+## 7. Verification record
 
-Screenshots stored in `documentation/evidence/`:
+The following GitHub settings were verified directly in the live repository/organisation settings. (Whether to attach screenshots as additional evidence is pending confirmation with the professors - see §3.)
 
-- [x] Branch ruleset (`main`/`dev`) - rules verified - 8.4 / 8.32
-- [x] Advanced Security: Dependency graph + Dependabot alerts - 8.8
-- [x] Secret Scanning + Push Protection enabled - 8.28
-- [x] Code scanning (CodeQL) configuration - 8.25 / 8.29
-- [x] Environments (`Test`/`Production`) + Production protection rules - 8.31
-- [x] Actions artifact/log retention - 90 days (org-enforced max) - 5.23
-- [x] Organisation MFA - enforced, secure methods only (verified) - 8.4
-- [x] SSO / SAML - not available on current (non-Enterprise) plan - 5.23
+- Branch ruleset (`main`/`dev`): require PR, require status checks, block force pushes, restrict deletions - verified - 8.4 / 8.32
+- Organisation two-factor authentication: enforced, secure methods only - verified - 8.4
+- Advanced Security: dependency graph on, Dependabot alerts on, Dependabot security updates off - verified - 8.8
+- Secret Scanning + Push Protection: enabled - verified - 8.28
+- Code scanning (CodeQL): active via workflow, failure threshold "High or higher" - verified - 8.25 / 8.29
+- Environments `Test` / `Production`, with Production protection rules (required reviewers, prevent self-review, wait timer, deploy from `main` only, no admin bypass) - verified - 8.31
+- Actions artifact/log retention: 90 days (organisation-enforced maximum) - verified - 5.23
+- SSO / SAML: not available on the current (non-Enterprise) plan - 5.23
