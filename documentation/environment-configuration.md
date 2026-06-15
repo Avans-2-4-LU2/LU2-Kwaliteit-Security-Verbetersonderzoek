@@ -156,6 +156,48 @@ This reduces the risk of accidental or unauthorized deployments and ensures that
 
 The approval gates implement the four-eyes principle by requiring independent review before changes are merged or deployed. This improves traceability, supports change management, and reduces the risk of unauthorized or insecure changes reaching production.
 
+---
+
+# Dependency Management
+
+## Purpose
+
+Dependabot is configured to automatically monitor and update Maven dependencies
+in the codebase. Automated dependency updates reduce the risk of known
+vulnerabilities in outdated dependencies reaching protected branches or
+production.
+
+## Configuration
+
+| Setting            | Value                                    |
+| ------------------ | ---------------------------------------- |
+| Package Ecosystem  | Maven                                    |
+| Directory          | /openmrs-module-appointmentscheduling    |
+| Schedule           | Weekly                                   |
+| Target Branch      | Development                              |
+
+## Workflow
+
+1. Dependabot checks for outdated Maven dependencies on a weekly schedule.
+2. Dependabot raises a Pull Request towards Development for each outdated dependency.
+3. The Pull Request is reviewed and approved following the standard approval process.
+4. After approval, the dependency update is merged into Development.
+5. Validated updates are promoted to main through the standard Pull Request process.
+
+## Security Rationale
+
+Outdated dependencies are a common source of security vulnerabilities.
+By automating dependency update checks, the project ensures that known
+vulnerabilities in third-party libraries are identified and addressed in
+a timely manner.
+
+Dependency update Pull Requests follow the same approval process as code
+changes, ensuring that dependency updates are independently reviewed before
+being merged. This maintains traceability and supports secure software
+development practices.
+
+---
+
 # Code Scanning
 
 ## Purpose
