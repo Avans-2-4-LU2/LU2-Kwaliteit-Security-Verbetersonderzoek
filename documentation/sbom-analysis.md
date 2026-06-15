@@ -102,15 +102,15 @@ Contextueel = CVSS × (bereikbaarheid × 0.4 + healthcare-impact × 0.4 + exploi
 | 0.8 | Compile scope, internet-facing |
 | 1.0 | Directly reachable, no preconditions |
 
-**healthcare-impact** - severity of potential harm in the healthcare appointment scheduling context, based on the following CIA assessment of the system:
+**healthcare-impact** - severity of potential harm in the healthcare appointment scheduling context. The value is taken from the formal CIA (BIV) classification in [issue #29](cia-analysis.md), which rates the module's crown-jewel data (appointment records) as:
 
-- Confidentiality: **High** - appointment records contain personal health information (patient names, dates, care types) subject to NEN-7510 data classification requirements
-- Integrity: **High** - corrupted or manipulated scheduling data could delay or misdirect patient care
-- Availability: **Medium** - system outage prevents booking and viewing appointments but is not immediately life-critical; manual fallback processes exist in most hospital settings
+- **Confidentiality: critical (5)** - appointment records, requests, notes and confidential appointment types are special-category health data under AVG (GDPR) art. 9.
+- **Integrity: critical (5)** - corrupted or manipulated scheduling data can delay or misdirect patient care.
+- **Availability: high (4)** - loss of the scheduling service disrupts clinic operations, though it is not immediately life-critical.
 
-Fixed value: **0.8** for all findings in this system (healthcare data with indirect patient safety relevance).
+Fixed value: **0.8** for all findings in this system. A C=5 / I=5 / A=4 classification - confidentiality and integrity critical, availability high - maps to a high (0.8) healthcare-impact on the 0-1 scale. It is not set to the maximum (1.0) because this is an appointment-scheduling module, so patient-safety impact is indirect (via delayed or misdirected care) rather than direct (as in a dosing or treatment module).
 
-> **Provisional - pending issue #29.** This CIA assessment is an interim value used so the analysis can proceed. The formal CIA (BIV) classification is produced in issue #29 (Analyze the chosen project with respect to CIA), which is still in progress. When #29 is finalised, this healthcare-impact factor must be reconciled with its outcome; if #29 lands on a different classification, the contextual scores in §5 are recalculated to stay consistent across deliverables.
+> **Reconciled with issue #29.** This factor was previously an interim value; it is now confirmed against the finalised CIA classification in #29. #29 rates availability slightly higher than the earlier interim estimate (high rather than medium), which reinforces - and does not lower - the 0.8 value, so the contextual scores in §5 are unchanged.
 
 **exploit** - known exploitation activity based on EPSS and CISA KEV:
 
