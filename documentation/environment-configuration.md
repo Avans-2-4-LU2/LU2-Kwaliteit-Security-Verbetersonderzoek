@@ -187,3 +187,42 @@ published for existing code patterns.
 
 These measures support secure software development practices and contribute
 to compliance with NEN 7510.
+
+# Secret Scanning
+
+## Purpose
+
+Secret scanning is configured to automatically detect and prevent secrets
+such as API keys, tokens, and credentials from being committed to the
+repository. This reduces the risk of sensitive credentials being exposed
+in the codebase or commit history.
+
+## Configuration
+
+| Setting          | Value    |
+| ---------------- | -------- |
+| Secret Scanning  | Enabled  |
+| Push Protection  | Enabled  |
+
+## How it works
+
+**Secret Scanning** monitors the repository and commit history for known
+secret patterns such as API keys, tokens, and credentials. When a secret
+is detected, an alert is raised in the GitHub Security tab.
+
+**Push Protection** actively blocks a push before it reaches the repository
+if a secret is detected in the commit. This prevents secrets from ever
+entering the codebase, rather than detecting them after the fact.
+
+## Security Rationale
+
+Accidentally committed secrets are a common source of security incidents.
+By enabling Secret Scanning and Push Protection, the project ensures that
+sensitive credentials are detected and blocked before they can be exposed.
+
+Push Protection is the most valuable control as it prevents secrets from
+entering the repository entirely, rather than detecting them after they
+have already been committed and potentially exposed.
+
+These measures support secure software development practices and contribute
+to compliance with NEN 7510.
