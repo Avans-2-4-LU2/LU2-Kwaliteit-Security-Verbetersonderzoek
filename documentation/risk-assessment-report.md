@@ -3,9 +3,9 @@
 **Requirement:** S-18 (Epic 7) - prove the identified risks are understood and under control.
 **Status:** draft. This report consolidates existing analyses; it does not produce new analysis.
 
-> **Scope note (work in progress).** This draft consolidates the inputs available in this branch:
-> the CIA/BIV analysis (#29), the SBOM/SCA analysis (#17), the CI/CD risk evaluation, the bow-tie
-> analysis (#33), and the compliance report (#27). The threat model (#51), security backlog (#35),
+> **Scope note (work in progress).** This draft consolidates the inputs available: the CIA/BIV analysis
+> (#29), the SBOM/SCA analysis (#17), the CI/CD risk evaluation, the bow-tie analysis (#33), the threat
+> model (#51, OWASP Threat Dragon / STRIDE), and the compliance report (#27). The security backlog (#35)
 > and penetration test findings (#36) are folded in once they land.
 
 ---
@@ -36,6 +36,7 @@ The report is a *consolidation*, not a new investigation. It combines:
 | Asset-based risks | CIA/BIV analysis (#29) | `Risk = Impact x Likelihood`, 1-25 scale, with per-category appetite thresholds (Section 6 of #29). Impact uses the maximum CIA score per asset (conservative). |
 | Dependency / CVE risks | SBOM & SCA analysis (#17) | Contextual score `CVSS x (reachability x 0.4 + healthcare-impact x 0.4 + exploit x 0.2)`, after removing verified false positives. |
 | Process risks | CI/CD risk evaluation | Qualitative high/medium/low based on observed pipeline configuration. |
+| Threat-model threats | Threat model (#51, STRIDE) | Severity from OWASP Threat Dragon (High/Medium); mapped to the common band in §3.1. |
 
 Each risk is then given a treatment decision (avoid / mitigate / transfer / accept) with justification,
 mapped to a NEN-7510:2024-2 control, and linked to the evidence artifact that supports it.
@@ -53,7 +54,8 @@ before the module is considered safe for release:
 The single highest residual risk is **unauthorised disclosure of patient-linked appointment data**.
 The codebase defines a dedicated confidentiality privilege, but the control observations in #29 (Section 8)
 note there is not yet evidence that it is enforced consistently across all UI and API entry points - an
-access-control gap that the penetration test (#36) targets directly.
+access-control gap that the penetration test (#36) targets directly and that the threat model (#51)
+independently flags as "missing function-level authorization" and IDOR.
 
 **Dependency / CVE risks (#17).** Of 135 raw scanner findings, 4 Critical findings were verified as
 false positives (mitigated by the JDK 8 deployment or non-default configuration) and removed.
@@ -68,6 +70,10 @@ compatibility.
 scan does not fail the build (`fail-build: false`), there is no automated build/unit-test stage, and no
 automated deployment pipeline enforces the documented environment approval gates. These weaken the
 assurance that what ships is actually what was reviewed and tested.
+
+**Threat model (#51).** A STRIDE threat model corroborates the access-control gap (F-01) and the
+dependency RCE risk, and surfaces three additional application-layer threats - stored/reflected XSS,
+CSRF, and unencrypted data at rest - now tracked as T-01 to T-03 in the register.
 
 ### 1.4 Conclusion
 
@@ -197,16 +203,38 @@ scope for this register, which covers the Critical tier.*
 | P-07 | No artifact / SBOM signing or provenance | Medium | CI/CD eval §2.2.C |
 | P-08 | CodeQL `build-mode: none` may analyse incompletely | Low | CI/CD eval §2.3.A |
 
-### 3.5 Application security findings (penetration test)
+### 3.5 Application-security and threat-model findings (from #51)
 
-| ID | Risk | Severity | Source |
-|----|------|----------|--------|
-| F-01 | Confidentiality privilege exists but is **not evidenced as enforced** across all UI/API entry points where confidential appointment details are rendered (potential broken access control) | High *(provisional)* | #29 §8 control observation |
+The threat model (#51, OWASP Threat Dragon, STRIDE) analyses the module across three nodes - the
+Appointment Web Interface, the Appointment Service Layer, and the database - and identifies seven
+threats. Three corroborate risks already in this register, one is already covered by the CVE register
+(§3.3), and three are new and added here. Severities are the Threat Dragon values (a 0-10 CVSS-style
+score, not contextually adjusted like the CVEs in §3.3).
 
-> **Pending #36.** F-01 is currently sourced from the control-gap observation in #29 §8. The penetration
-> test (#36) provides the demonstration that confirms exploitability and the final severity; this row is
-> **provisional** and will be reconciled with the pentest report once it lands. It maps directly to
-> asset risk **A-03** (exposure of confidential appointment types).
+| ID | Risk (STRIDE type) | Severity | Source |
+|----|--------------------|----------|--------|
+| F-01 | Missing function-level authorization + IDOR: `AppointmentService` methods use empty `@Authorized()` (login-only) and accept object IDs without ownership checks - confidential appointments readable without the confidentiality privilege (broken access control) | High | #51 (T2, T5) + #29 §8 |
+| T-01 | Stored/Reflected XSS in the appointment web interface (e.g. `chosenLocation`, `fromDate` rendered into JSP without encoding) | High (8.1) | #51 (T1) |
+| T-02 | Cross-Site Request Forgery on state-changing appointment actions (no CSRF tokens / SameSite) | High (8.3) | #51 (T4) |
+| T-03 | Unencrypted sensitive appointment/patient data at rest in the database | Medium (6.0) | #51 (T7) |
+
+**Threat-model cross-reference** (so the register and #51 stay consistent):
+
+| #51 threat | STRIDE | Register item |
+|------------|--------|---------------|
+| Missing function-level authorization | Tampering | F-01 / A-03 |
+| Insecure direct object reference | Tampering | F-01 / A-01 |
+| Unauthorized data disclosure (DB) | Information disclosure | A-01 |
+| RCE via outdated dependencies | Elevation of privilege | CVE register §3.3 (esp. C-02/C-03/C-04) |
+| Stored/Reflected XSS | Tampering | T-01 (new) |
+| Cross-Site Request Forgery | Tampering | T-02 (new) |
+| Unencrypted data at rest | Information disclosure | T-03 (new) |
+
+> **F-01 is corroborated, not provisional.** It is now supported by two independent analyses - the
+> control-gap observation in #29 §8 and the threat model #51 (the "missing function-level authorization"
+> and "IDOR" threats). The penetration test (#36) will add the executable demonstration; only that
+> reconciliation remains, so F-01 is treated as a confirmed finding. It maps to asset risks **A-01** and
+> **A-03**.
 
 ---
 
@@ -276,11 +304,14 @@ accepted residual risk (Section 6).
 | P-07 | **Mitigate** | 8.9, 8.28 | Sign the SBOM/artifacts (Cosign / SLSA provenance). |
 | P-08 | Accept / Mitigate | 8.29 | Monitor CodeQL coverage; switch to `build-mode: manual` if classes are missed. |
 
-### 4.4 Application security finding
+### 4.4 Application-security and threat-model findings
 
 | ID | Treatment | NEN-7510 | Justification |
 |----|-----------|----------|---------------|
-| F-01 | **Mitigate** *(provisional)* | 8.4, 8.29 | Add the confidentiality-privilege check to the core/REST retrieval paths (mirroring the reporting evaluators), then re-test red→green. Confirmed and scheduled via the penetration test (#36, sprint 3). Reduces A-03. |
+| F-01 | **Mitigate (in scope)** | 8.4, 8.29 | Add the confidentiality-privilege check to the core/REST retrieval paths (mirroring the reporting evaluators), then re-test red→green (#36, sprint 3). Reduces A-01/A-02/A-03. Corroborated by #51. |
+| T-01 | Mitigate (recommended) - **deferred** | 8.28 | Output-encode JSP EL (`<c:out>`) and validate input. Deferred under the time-box (Section 5); residual accepted. |
+| T-02 | Mitigate (recommended) - **deferred** | 8.28, 8.26 | Anti-CSRF tokens + SameSite cookies. Deferred under the time-box; residual accepted. |
+| T-03 | Mitigate (recommended) - **deferred** | 8.24 | Encrypt sensitive data at rest (disk/column-level); defence-in-depth on top of DB access control. Deferred; residual accepted. |
 
 ### 4.5 Bow-tie deep dive - top risk A-01 (from #33)
 
@@ -315,7 +346,8 @@ supplies the *recovery* barriers (anomaly detection, audit logging). The diagram
 5.12 classification of information · 5.15 access control · 5.18 access rights · 5.19 supplier
 relationships · 5.22 monitoring/change-management of supplier services · 8.3 information access
 restriction · 8.4 access to source code & data · 8.8 technical vulnerabilities · 8.9 configuration
-management · 8.13 information backup · 8.15 logging · 8.25 secure development lifecycle · 8.26
+management · 8.13 information backup · 8.15 logging · 8.24 use of cryptography · 8.25 secure development
+lifecycle · 8.26
 application security requirements · 8.28 secure coding · 8.29 security testing · 8.31 separation of
 environments · 8.32 change management.
 
@@ -345,9 +377,12 @@ combined with the risk-reduction value, to support prioritisation.
 
 **Risk-reduction value**
 
-- **High** - moves a Critical / unacceptable-band risk down a band.
-- **Medium** - a meaningful reduction within band.
-- **Low** - marginal or purely defensive.
+- **High** - removes or substantially reduces a High- or Critical/unacceptable-band risk.
+- **Medium** - a meaningful reduction of a Medium-band risk, or a partial reduction of a higher one.
+- **Low** - marginal, optional, or purely defensive.
+
+The value reflects the severity of the risk addressed; it is independent of whether the mitigation is
+scheduled now or deferred (deferral is captured in the treatment, not the value).
 
 ### 5.2 Cost table
 
@@ -359,6 +394,9 @@ combined with the risk-reduction value, to support prioritisation.
 | A-05 | Integrity/availability safeguards on provider schedules | M | Low | Optional. |
 | A-06 / A-07 | Immutable logging + access restriction on audit trail/metadata | M | Medium | Overlaps with the sprint-3 logging work (8.15). |
 | A-08 | Periodic access-rights review of privilege config | S | Low | Process step, not code. |
+| T-01 | Output-encode JSP + input validation (XSS) | M | **High** | High-severity threat (#51); deferred under the time-box, residual accepted. |
+| T-02 | Anti-CSRF tokens + SameSite cookies | M | **High** | High-severity threat (#51); deferred under the time-box, residual accepted. |
+| T-03 | Encrypt sensitive data at rest | **L** | Medium | Deferred; infrastructure/DB-level change. |
 | C-03, C-04, C-08, C-09, C-12, C-14 (PATCH) | Document recommended version bump in backlog (#35) | **S** to document | High *if applied* | **Applying is External** (platform-`provided`); the team can only record the recommendation. |
 | C-02 (ACCEPT) | Do not expose Spring serializing-exporter endpoints | S | Medium | Deployment/config guidance. |
 | C-10 (ACCEPT) | Restrict untrusted JSON deserialization | M | Medium | Application-level guard. |
