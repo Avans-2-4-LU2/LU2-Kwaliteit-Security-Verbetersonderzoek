@@ -5,7 +5,7 @@
 
 > **Scope note (work in progress).** This draft consolidates the inputs available in this branch:
 > the CIA/BIV analysis (#29), the SBOM/SCA analysis (#17), the CI/CD risk evaluation, the bow-tie
-> analysis (#33), and the compliance report (#57). The threat model (#51), security backlog (#35),
+> analysis (#33), and the compliance report (#27). The threat model (#51), security backlog (#35),
 > and penetration test findings (#36) are folded in once they land.
 
 ---
@@ -214,7 +214,7 @@ scope for this register, which covers the Critical tier.*
 
 Each risk from Section 3 is assigned one of four treatment strategies (#29 §7), the **specific
 NEN-7510:2024-2 control** its mitigation satisfies, and a justification. Control numbers are taken from
-the source analyses (#17 §8 per-CVE mapping, the bow-tie #33, the compliance report #57) to keep the
+the source analyses (#17 §8 per-CVE mapping, the bow-tie #33, the compliance report #27) to keep the
 mapping consistent across documents. A legend of the control numbers is at the end of this section.
 
 **Treatment strategies:** *Avoid* (remove the activity/redesign) · *Mitigate* (reduce impact or
@@ -320,7 +320,7 @@ application security requirements · 8.28 secure coding · 8.29 security testing
 environments · 8.32 change management.
 
 **Coverage check:** every finding in Section 3 has a treatment and maps to at least one specific control,
-and the control numbers used here are the same ones evidenced in the compliance report (#57), so the RAR
+and the control numbers used here are the same ones evidenced in the compliance report (#27), so the RAR
 and the compliance report stay consistent.
 
 ---
