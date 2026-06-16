@@ -1,0 +1,801 @@
+{
+  "version": "2.5.0",
+  "summary": {
+    "title": "OpenMRS Threat model",
+    "owner": "",
+    "description": "Threat model for the appointment scheduling module, covering the browser-facing web interface, service layer, and database persistence.",
+    "id": 0
+  },
+  "detail": {
+    "contributors": [],
+    "diagrams": [
+      {
+        "id": 2,
+        "title": "New STRIDE diagram",
+        "diagramType": "STRIDE",
+        "placeholder": "New STRIDE diagram description",
+        "thumbnail": "./public/content/images/thumbnail.stride.jpg",
+        "version": "2.5.0",
+        "cells": [
+          {
+            "position": {
+              "x": 220,
+              "y": 170
+            },
+            "size": {
+              "width": 112.5,
+              "height": 60
+            },
+            "attrs": {
+              "text": {
+                "text": "OpenMRS user"
+              },
+              "body": {
+                "stroke": "#333333",
+                "strokeWidth": 1.5,
+                "strokeDasharray": null
+              }
+            },
+            "visible": true,
+            "shape": "actor",
+            "zIndex": 1,
+            "ports": {
+              "groups": {
+                "top": {
+                  "position": "top",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "right": {
+                  "position": "right",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "bottom": {
+                  "position": "bottom",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "left": {
+                  "position": "left",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                }
+              },
+              "items": [
+                {
+                  "group": "top",
+                  "id": "9089ef30-9d72-4676-87cc-9339736cc77c"
+                },
+                {
+                  "group": "right",
+                  "id": "689073b4-4dda-488a-8e38-e8d78a413c6d"
+                },
+                {
+                  "group": "bottom",
+                  "id": "caf78ac8-e173-49e8-b5e9-137f518900ac"
+                },
+                {
+                  "group": "left",
+                  "id": "193f05de-a213-4ee6-95b8-8461328129f1"
+                }
+              ]
+            },
+            "id": "da223a77-389a-4a86-b4c3-2184dcdc5081",
+            "data": {
+              "type": "tm.Actor",
+              "name": "OpenMRS user",
+              "description": "Authenticated or anonymous user interacting with the appointment module.",
+              "isTrustBoundary": false,
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "providesAuthentication": false,
+              "threats": []
+            }
+          },
+          {
+            "shape": "flow",
+            "attrs": {
+              "line": {
+                "stroke": "#333333",
+                "targetMarker": {
+                  "name": "block"
+                },
+                "sourceMarker": {
+                  "name": ""
+                },
+                "strokeDasharray": null
+              }
+            },
+            "width": 200,
+            "height": 100,
+            "zIndex": 10,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Flow",
+              "name": "Browser → Web Interface",
+              "description": "User traffic over HTTPS to the appointment UI.",
+              "outOfScope": false,
+              "isTrustBoundary": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "isBidirectional": false,
+              "isEncrypted": true,
+              "isPublicNetwork": true,
+              "protocol": "HTTPS",
+              "threats": []
+            },
+            "labels": [
+              "Browser → Web Interface"
+            ],
+            "id": "2d914f5f-c90f-4635-8832-c50375cae3ff",
+            "source": {
+              "cell": "da223a77-389a-4a86-b4c3-2184dcdc5081",
+              "port": "689073b4-4dda-488a-8e38-e8d78a413c6d"
+            },
+            "target": {
+              "cell": "f3a62c6c-f82a-44c4-8f4c-9ccbdea42c59",
+              "port": "1e497584-fcc1-4fce-b702-d49f871f0b78"
+            },
+            "vertices": [
+              {
+                "x": 470,
+                "y": 260
+              },
+              {
+                "x": 490,
+                "y": 210
+              }
+            ]
+          },
+          {
+            "shape": "flow",
+            "attrs": {
+              "line": {
+                "stroke": "#333333",
+                "targetMarker": {
+                  "name": "block"
+                },
+                "sourceMarker": {
+                  "name": "block"
+                },
+                "strokeDasharray": null
+              }
+            },
+            "width": 200,
+            "height": 100,
+            "zIndex": 10,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Flow",
+              "name": "Web Interface → Service Layer",
+              "description": "Internal flow from the JSP frontend to the appointment business logic.",
+              "outOfScope": false,
+              "isTrustBoundary": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "isBidirectional": true,
+              "isEncrypted": true,
+              "isPublicNetwork": false,
+              "protocol": "Internal API",
+              "threats": []
+            },
+            "labels": [
+              "Web Interface → Service Layer"
+            ],
+            "id": "56c0265c-7a3d-4b74-a1d2-0846c1ce72d0",
+            "source": {
+              "cell": "f3a62c6c-f82a-44c4-8f4c-9ccbdea42c59",
+              "port": "43ff4a15-f8e6-40d9-b9fb-e97e60402902"
+            },
+            "target": {
+              "cell": "f5daca9d-d1e9-4e00-8ce8-30cf87caec23",
+              "port": "17ff46e6-a515-4694-8afb-b5df2cd574cd"
+            },
+            "vertices": [
+              {
+                "x": 730,
+                "y": 340
+              },
+              {
+                "x": 690,
+                "y": 370
+              },
+              {
+                "x": 680,
+                "y": 430
+              },
+              {
+                "x": 640,
+                "y": 460
+              },
+              {
+                "x": 620,
+                "y": 460
+              }
+            ]
+          },
+          {
+            "shape": "flow",
+            "attrs": {
+              "line": {
+                "stroke": "#333333",
+                "targetMarker": {
+                  "name": "block"
+                },
+                "sourceMarker": {
+                  "name": "block"
+                },
+                "strokeDasharray": null
+              }
+            },
+            "width": 200,
+            "height": 100,
+            "zIndex": 10,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Flow",
+              "name": "Service Layer → DB",
+              "description": "Persistence operations for appointment and patient records.",
+              "outOfScope": false,
+              "isTrustBoundary": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "isBidirectional": true,
+              "isEncrypted": false,
+              "isPublicNetwork": false,
+              "protocol": "JDBC",
+              "threats": []
+            },
+            "labels": [
+              "Service Layer → DB"
+            ],
+            "id": "9f47b6d8-55a6-4b26-9f6d-6d4c727a60e1",
+            "source": {
+              "cell": "f5daca9d-d1e9-4e00-8ce8-30cf87caec23",
+              "port": "92f737df-2759-4a12-abdc-c46d26a26138"
+            },
+            "target": {
+              "cell": "08c88773-7304-49dd-97a0-a30e5924c185",
+              "port": "5160e343-38e4-42bd-bb96-81fd4406eb3a"
+            },
+            "vertices": [
+              {
+                "x": 890,
+                "y": 470
+              },
+              {
+                "x": 980,
+                "y": 470
+              },
+              {
+                "x": 1040,
+                "y": 470
+              }
+            ]
+          },
+          {
+            "position": {
+              "x": 670,
+              "y": 140
+            },
+            "size": {
+              "width": 190,
+              "height": 180
+            },
+            "attrs": {
+              "text": {
+                "text": "Appointment Web Interface"
+              },
+              "body": {
+                "stroke": "red",
+                "strokeWidth": 2.5,
+                "strokeDasharray": null
+              }
+            },
+            "visible": true,
+            "shape": "process",
+            "zIndex": 11,
+            "ports": {
+              "groups": {
+                "top": {
+                  "position": "top",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "right": {
+                  "position": "right",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "bottom": {
+                  "position": "bottom",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "left": {
+                  "position": "left",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                }
+              },
+              "items": [
+                {
+                  "group": "top",
+                  "id": "17ff46e6-a515-4694-8afb-b5df2cd574cd"
+                },
+                {
+                  "group": "right",
+                  "id": "92f737df-2759-4a12-abdc-c46d26a26138"
+                },
+                {
+                  "group": "bottom",
+                  "id": "43ff4a15-f8e6-40d9-b9fb-e97e60402902"
+                },
+                {
+                  "group": "left",
+                  "id": "1e497584-fcc1-4fce-b702-d49f871f0b78"
+                }
+              ]
+            },
+            "id": "f3a62c6c-f82a-44c4-8f4c-9ccbdea42c59",
+            "data": {
+              "type": "tm.Process",
+              "name": "Appointment Web Interface",
+              "description": "Browser-facing JSP frontend for appointment scheduling and searches.",
+              "outOfScope": false,
+              "isTrustBoundary": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": true,
+              "handlesCardPayment": false,
+              "handlesGoodsOrServices": false,
+              "isWebApplication": true,
+              "privilegeLevel": "User",
+              "threats": [
+                {
+                  "id": "05a7e922-93cb-4490-a5c0-53641512bfc1",
+                  "title": "Stored/Reflected XSS",
+                  "status": "Open",
+                  "severity": "High",
+                  "type": "Tampering",
+                  "description": "Input fields such as chosenLocation or fromDate are rendered into JSP without HTML entity encoding, allowing malicious script execution in victims' browsers.",
+                  "mitigation": "Wrap all EL expressions in JSPs with <c:out value=\"${...}\" /> and validate input before rendering.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 1,
+                  "score": "8,1"
+                },
+                {
+                  "id": "e648e2e2-8fa5-428a-9106-2bd34d405eae",
+                  "title": "Remote code execution via outdated dependencies",
+                  "status": "Open",
+                  "severity": "Critical",
+                  "type": "Elevation of privilege",
+                  "description": "The core module relies on vulnerable libraries that can be exploited for remote code execution.",
+                  "mitigation": "Upgrade vulnerable dependencies in pom.xml or apply vendor mitigations.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 3,
+                  "score": "9,8"
+                },
+                {
+                  "id": "bb6a0c8d-b7c1-4d4b-8a8f-1a4e1f5fbc20",
+                  "title": "Cross-Site Request Forgery",
+                  "status": "Open",
+                  "severity": "High",
+                  "type": "Tampering",
+                  "description": "State-changing appointment actions are exposed through the web interface without CSRF tokens or strict cookie controls.",
+                  "mitigation": "Implement anti-CSRF tokens and set session cookies with SameSite attributes.",
+                  "modelType": "STRIDE",
+                  "new": true,
+                  "number": 4,
+                  "score": "8,3"
+                }
+              ],
+              "threatFrequency": {
+                "spoofing": 0,
+                "tampering": 2,
+                "repudiation": 0,
+                "informationDisclosure": 0,
+                "denialOfService": 0,
+                "elevationOfPrivilege": 0
+              }
+            }
+          },
+          {
+            "position": {
+              "x": 450,
+              "y": 480
+            },
+            "size": {
+              "width": 170,
+              "height": 170
+            },
+            "attrs": {
+              "text": {
+                "text": "Appointment Service Layer"
+              },
+              "body": {
+                "stroke": "red",
+                "strokeWidth": 2.5,
+                "strokeDasharray": null
+              }
+            },
+            "visible": true,
+            "shape": "process",
+            "zIndex": 12,
+            "ports": {
+              "groups": {
+                "top": {
+                  "position": "top",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "right": {
+                  "position": "right",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "bottom": {
+                  "position": "bottom",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "left": {
+                  "position": "left",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                }
+              },
+              "items": [
+                {
+                  "group": "top",
+                  "id": "17ff46e6-a515-4694-8afb-b5df2cd574cd"
+                },
+                {
+                  "group": "right",
+                  "id": "92f737df-2759-4a12-abdc-c46d26a26138"
+                },
+                {
+                  "group": "bottom",
+                  "id": "43ff4a15-f8e6-40d9-b9fb-e97e60402902"
+                },
+                {
+                  "group": "left",
+                  "id": "1e497584-fcc1-4fce-b702-d49f871f0b78"
+                }
+              ]
+            },
+            "id": "f5daca9d-d1e9-4e00-8ce8-30cf87caec23",
+            "data": {
+              "type": "tm.Process",
+              "name": "Appointment Service Layer",
+              "description": "Business logic and authorization enforcement for appointment operations.",
+              "outOfScope": false,
+              "isTrustBoundary": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": true,
+              "handlesCardPayment": false,
+              "handlesGoodsOrServices": false,
+              "isWebApplication": false,
+              "privilegeLevel": "Application",
+              "threats": [
+                {
+                  "id": "86f14af0-432f-4271-964c-a03e7b163709",
+                  "title": "Missing function-level authorization",
+                  "status": "Open",
+                  "severity": "High",
+                  "type": "Tampering",
+                  "description": "AppointmentService methods using empty @Authorized() only verify login state and do not enforce required privileges.",
+                  "mitigation": "Use explicit privilege strings for each annotated method and verify the user is authorized for the requested appointment data.",
+                  "modelType": "STRIDE",
+                  "new": false,
+                  "number": 2,
+                  "score": "8,1"
+                },
+                {
+                  "id": "2d5b1a7f-403f-4d29-8d8c-03e0f8e2b4b6",
+                  "title": "Insecure direct object reference",
+                  "status": "Open",
+                  "severity": "High",
+                  "type": "Tampering",
+                  "description": "Appointment and patient identifiers are accepted without verifying ownership or authorization.",
+                  "mitigation": "Validate object ownership and enforce authorization for all appointment and patient record access.",
+                  "modelType": "STRIDE",
+                  "new": true,
+                  "number": 5,
+                  "score": "8,2"
+                }
+              ],
+              "threatFrequency": {
+                "spoofing": 1,
+                "tampering": 2,
+                "repudiation": 0,
+                "informationDisclosure": 0,
+                "denialOfService": 0,
+                "elevationOfPrivilege": 0
+              }
+            }
+          },
+          {
+            "position": {
+              "x": 1130,
+              "y": 450
+            },
+            "size": {
+              "width": 120,
+              "height": 60
+            },
+            "attrs": {
+              "text": {
+                "text": "DB"
+              },
+              "topLine": {
+                "stroke": "red",
+                "strokeWidth": 2.5,
+                "strokeDasharray": null
+              },
+              "bottomLine": {
+                "stroke": "red",
+                "strokeWidth": 2.5,
+                "strokeDasharray": null
+              }
+            },
+            "visible": true,
+            "shape": "store",
+            "zIndex": 13,
+            "ports": {
+              "groups": {
+                "top": {
+                  "position": "top",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "right": {
+                  "position": "right",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "bottom": {
+                  "position": "bottom",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "left": {
+                  "position": "left",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                }
+              },
+              "items": [
+                {
+                  "group": "top",
+                  "id": "4d8125fb-f20d-499b-883a-ba0cedc231ab"
+                },
+                {
+                  "group": "right",
+                  "id": "37aab22c-a56d-4310-8ec0-0e7ad213685d"
+                },
+                {
+                  "group": "bottom",
+                  "id": "71921b82-59ba-4555-a485-9ad0d7376f53"
+                },
+                {
+                  "group": "left",
+                  "id": "5160e343-38e4-42bd-bb96-81fd4406eb3a"
+                }
+              ]
+            },
+            "id": "08c88773-7304-49dd-97a0-a30e5924c185",
+            "data": {
+              "type": "tm.Store",
+              "name": "DB",
+              "description": "Persistence store for appointment and patient data.",
+              "outOfScope": false,
+              "isTrustBoundary": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": true,
+              "isALog": false,
+              "isEncrypted": false,
+              "isSigned": false,
+              "storesCredentials": false,
+              "storesInventory": false,
+              "threats": [
+                {
+                  "id": "8f4d3c18-9047-43f0-b8a3-1d3d73a9b7d7",
+                  "title": "Unauthorized data disclosure",
+                  "status": "Open",
+                  "severity": "High",
+                  "type": "Information Disclosure",
+                  "description": "Database records containing appointment and patient details may be exposed if access controls are bypassed or DB credentials are compromised.",
+                  "mitigation": "Enforce least privilege for DB accounts, protect credentials, and apply row-level access checks.",
+                  "modelType": "STRIDE",
+                  "new": true,
+                  "number": 6,
+                  "score": "8,0"
+                },
+                {
+                  "id": "c4f78da6-95d4-496f-ae60-1b77220b6783",
+                  "title": "Unencrypted sensitive data at rest",
+                  "status": "Open",
+                  "severity": "Medium",
+                  "type": "Information Disclosure",
+                  "description": "Appointment and patient data in the database is not protected with encryption at rest.",
+                  "mitigation": "Enable disk-level or column-level encryption for sensitive data and backups.",
+                  "modelType": "STRIDE",
+                  "new": true,
+                  "number": 7,
+                  "score": "6,0"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "diagramTop": 3,
+    "reviewer": "",
+    "threatTop": 3
+  }
+}
