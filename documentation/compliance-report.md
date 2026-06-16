@@ -14,9 +14,7 @@ The control selection follows the relevant-controls list from workshop WS02 (cha
 
 ## 3. Note on evidence
 
-Controls enforced through GitHub settings (branch ruleset, Advanced Security, Environments, organisation 2FA, Actions retention) were verified directly in the live repository and organisation settings. Each control references its supporting documentation file inline, and §7 records which live settings were checked.
-
-> **To confirm with the professors:** whether screenshots of these live settings should be attached as additional evidence. Until that is decided, this report deliberately relies on the inline file references and the verification record in §7 - it does **not** embed or depend on screenshots.
+Controls enforced through GitHub settings (branch ruleset, Advanced Security, Environments, organisation 2FA, Actions retention) were verified directly in the live repository and organisation settings. Screenshots of these settings are embedded as supporting evidence in the relevant control sections below; the raw image files are stored in `documentation/evidence/` (see `documentation/evidence/README.md` for the file list).
 
 ---
 
@@ -26,6 +24,12 @@ Controls enforced through GitHub settings (branch ruleset, Advanced Security, En
 
 - **Requires:** access to source code is restricted; all changes are traceable to a person and go through a controlled, reviewed change process.
 - **How the pipeline complies:** a branch ruleset targeting `main` and `dev` (verified live) requires a pull request, requires status checks to pass, blocks force pushes, and restricts deletions. At least one approving review is required before merge. Commits follow Conventional Commits and link to issues for traceability (`commit-convention.md`); the review process is documented (`review-documentation.md`, `branch-protection-documentation.md`). Organisation-wide two-factor authentication is enforced, with only secure 2FA methods allowed (verified), so all access is tied to MFA-protected accounts.
+
+  *Evidence:*
+
+  ![Branch ruleset for main and dev](evidence/pushprotection%20rulesets.png)
+
+  ![Organisation two-factor authentication enforced](evidence/2FA.webp)
 - **Status:** Implemented.
 - **Residual risk:** signed (PGP) commits are **not** required (ruleset confirmed off).
 
@@ -33,6 +37,10 @@ Controls enforced through GitHub settings (branch ruleset, Advanced Security, En
 
 - **Requires:** vulnerabilities are identified, assessed, and remediated in a timely, risk-based way.
 - **How the pipeline complies:** the **dependency graph** and **Dependabot alerts** are enabled (verified). SBOM generation + SCA scan (`sbom.yml`, `sbom.md`); a Dependency Review gate blocks PRs introducing new vulnerable/disallowed-license dependencies (`dependency-review.yml`, `dependency-review.md`); CodeQL SAST runs on push/PR (`codeql.yml`). Findings are verified, contextually scored, and prioritised (`sbom-analysis.md`, on its feature branch).
+
+  *Evidence:*
+
+  ![Advanced Security: dependency graph and Dependabot](evidence/advanced%20security.png)
 - **Status:** Implemented for identification/analysis; remediation of findings is planned for sprint 3.
 - **Residual risk:** **Dependabot security updates (auto-patch PRs) are disabled** - enabling them would close the loop on available fixes. The Critical platform-dependency CVEs are accepted (ACCEPT in the SBOM analysis) because they live in provided OpenMRS libraries this module cannot patch.
 
@@ -54,6 +62,10 @@ Controls enforced through GitHub settings (branch ruleset, Advanced Security, En
 
 - **Requires:** security is built in throughout development; security testing is performed and documented as part of the SDLC.
 - **How the pipeline complies:** SAST (CodeQL) runs on push and pull request (`codeql.yml`), with a code-scanning failure threshold of "High or higher"; Dependency Review runs on every PR (`dependency-review.yml`); a penetration test is planned with scope, method, and rules of engagement (`pentest-plan.md`) and a demonstration test exists (`ConfidentialAppointmentAccessControlTest`).
+
+  *Evidence:*
+
+  ![Code scanning (CodeQL) configuration](evidence/Code%20scanning.png)
 - **Status:** Partial.
 - **Residual risk:** DAST (e.g. OWASP ZAP) is not implemented; the penetration test is paused pending a build blocker and professor input (see `pentest-plan.md`). CodeQL runs with `build-mode: none`, so no CI stage performs a real compile (see §5).
 
@@ -61,6 +73,10 @@ Controls enforced through GitHub settings (branch ruleset, Advanced Security, En
 
 - **Requires:** defined secure-coding guidelines exist and are checked.
 - **How the pipeline complies:** **GitHub Secret Scanning and Push Protection are enabled** (verified) - secrets are detected and commits containing them are blocked. Secret handling is documented (`environment-configuration.md`); dependencies are pinned to exact versions in Maven; code is reviewed on every PR.
+
+  *Evidence:*
+
+  ![Secret Protection and Push Protection enabled (bottom of the Code scanning settings page)](evidence/Code%20scanning.png)
 - **Status:** Partial.
 - **Residual risk:** no enforced linters (SpotBugs/PMD/Checkstyle) in CI and no formally documented secure-coding standard.
 
@@ -68,6 +84,12 @@ Controls enforced through GitHub settings (branch ruleset, Advanced Security, En
 
 - **Requires:** development, test, and production environments are separated, with separate configuration and secrets.
 - **How the pipeline complies:** GitHub Environments **`Test`** and **`Production`** exist (verified). Production has deployment protection rules: required reviewers (two named approvers) with **prevent self-review** (four-eyes), a 5-minute wait timer, deployment restricted to the `main` branch, and **administrators cannot bypass**. Each environment has a separate `ENVIRONMENT` variable (`test` / `production`). Documented in `environment-configuration.md`.
+
+  *Evidence:*
+
+  ![GitHub Environments: Test and Production](evidence/environments.png)
+
+  ![Production environment protection rules](evidence/environments%20cofiguration.png)
 - **Status:** Implemented (as deployment governance).
 - **Residual risk:** the environments are configured with separate **variables** but **no environment secrets yet** (none are needed until something is actually deployed). There is no running deployed instance - the Environments provide deployment governance, not a live application.
 
@@ -82,6 +104,10 @@ Controls enforced through GitHub settings (branch ruleset, Advanced Security, En
 
 - **Requires:** the cloud services used are recorded and their use is secured.
 - **How the pipeline complies:** GitHub is the cloud development/CI platform, used under the **Avans-2-4-LU2 organisation**; access and configuration are documented (`environment-configuration.md`, `branch-protection-documentation.md`). Actions artifact/log retention is set to **90 days** (the organisation-enforced maximum).
+
+  *Evidence:*
+
+  ![Actions artifact and log retention](evidence/Artifact%20and%20log.png)
 - **Status:** Partial.
 - **Residual risk:** SSO/SAML single sign-on is **not available** on the organisation's current (non-Enterprise) GitHub plan, so identity-provider integration is out of scope; access relies on individual GitHub accounts within the organisation.
 
@@ -113,7 +139,7 @@ During penetration-test setup it was found that no CI stage performs a real `jav
 
 ## 7. Verification record
 
-The following GitHub settings were verified directly in the live repository/organisation settings. (Whether to attach screenshots as additional evidence is pending confirmation with the professors - see §3.)
+The following GitHub settings were verified directly in the live repository/organisation settings; screenshots are embedded in the corresponding control sections above and stored in `documentation/evidence/`.
 
 - Branch ruleset (`main`/`dev`): require PR, require status checks, block force pushes, restrict deletions - verified - 8.4 / 8.32
 - Organisation two-factor authentication: enforced, secure methods only - verified - 8.4
