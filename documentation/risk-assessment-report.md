@@ -456,3 +456,51 @@ execution this project follows is the time-boxed scope from Section 5 (tracks M1
 
 This is a deliberate, documented divergence: the backlog says *what should happen*, Section 7 records
 *what we are accepting for now and why*.
+
+---
+
+## 7. Residual Risk
+
+> **To be finalised after sprint 3.** Residual risk is what remains *after* the sprint-3 mitigations are
+> attempted, so this section is completed once those outcomes are known (which mitigations landed and which
+> were deferred). The forward references to this section from §1.3, §4.2, and §6.2 resolve here.
+
+**Already certain (independent of the sprint-3 outcome):**
+
+- **Platform-`provided` CVEs (C-02 to C-14) remain residual.** They live in libraries supplied by the
+  OpenMRS platform, which this module cannot upgrade. They are accepted with the compensating controls in
+  §4.2; the PATCH recommendations are recorded in the backlog (#35) for the platform/deployment owner.
+
+**To be added after sprint 3:**
+
+- Which in-scope mitigations (M1-M4) were actually completed versus deferred.
+- Explicit justification for any High-value deferrals - in particular **T-01 (XSS)** and **T-02 (CSRF)**,
+  which are High-value (§5.2) and must not be left as silent gaps.
+- The final accepted-residual list, each item with a recommended follow-up.
+
+---
+
+## 8. Traceability
+
+Every finding in this report links to at least one NEN-7510:2024-2 control and to a concrete evidence
+artifact - either an **analysis document** (the source that identified/scored the risk) or a **platform
+artifact** (a CI step, gate, branch rule, or test that implements/verifies a control). This matrix is the
+index that the sprint-3 and sprint-4 artifacts attach to, and it feeds the sprint-4 traceability matrix
+(S-25).
+
+| Register IDs | NEN-7510 | Analysis evidence (document) | Platform artifact (CI / live / test) |
+|--------------|----------|------------------------------|--------------------------------------|
+| A-01, A-03, F-01 (access control) | 8.4, 8.3, 5.15, 8.29 | `cia-analysis.md` §7/§8, `bowtie-analysis.md`, threat model (#51), `pentest-report.md` (#36) | `ConfidentialAppointmentAccessControlTest.java` (#36); `PatientToAppointmentDataEvaluatorTest` (control test); branch ruleset verified in #27 |
+| A-02 (sensitive free-text) | 8.4, 5.12 | `cia-analysis.md` §3/§7 | masking + log tests (sprint 3, SR-02) |
+| A-04 (schedule integrity) | 8.26, 8.13 | `cia-analysis.md` §7 | validation/concurrency tests (deferred, SR-04) |
+| A-06, A-07 (audit trail) | 8.15 | `cia-analysis.md` §7 | logging tests (sprint 3, SR-05) |
+| A-05, A-08 | 8.26, 5.18 | `cia-analysis.md` §7/§8 | PR code review |
+| C-02 to C-14 (CVEs) | 8.8, 8.28, 5.19 | `sbom-analysis.md` §4/§5 | `bom.json` (CycloneDX), `grype-report.json`, `sbom.yml` (SBOM+SCA), `dependency-review.yml` gate; Dependabot verified in #27 |
+| T-01, T-02, T-03 (STRIDE) | 8.28, 8.26, 8.24 | threat model (#51) | CodeQL (`codeql.yml`) for injection-class; remainder deferred |
+| P-01 to P-08 (CI/CD) | 8.8, 8.25, 8.29, 8.31, 8.9, 8.32 | `cicd-risk-evaluation.md` §2 | `.github/workflows/*`; branch ruleset, CodeQL, Dependabot, Environments, retention - all verified in `compliance-report.md` (#27) |
+
+**Coverage:** every register ID (A-01-A-08, F-01, T-01-T-03, C-02-C-14, P-01-P-08) appears above with a
+control and an artifact. Artifacts marked "sprint 3" / "deferred" are planned tests or PRs that will be
+attached as the corresponding mitigations land; the verified platform settings (branch ruleset, CodeQL,
+Dependabot, Environments, retention) are already evidenced with screenshots in `documentation/evidence/`
+via the compliance report (#27).
