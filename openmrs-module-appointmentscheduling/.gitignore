@@ -65,6 +65,10 @@ nb-configuration.xml
 ################
 
 
+### Tools ###
+grype.exe
+grype
+
 ### Project specific files ###
 api/.classpath
 api/.project
@@ -75,3 +79,5 @@ omod/.project
 omod/.settings/*
 omod/target/*
 
+
+grype.exe
