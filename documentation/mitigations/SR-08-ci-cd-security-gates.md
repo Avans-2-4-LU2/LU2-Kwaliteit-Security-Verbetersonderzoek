@@ -20,7 +20,7 @@ security checks blocking and documents the gate set. Reference policy: `../ci-cd
 **No product/source code was changed by this issue.** The only repository change is documentation; the
 gate enforcement is a branch-ruleset setting.
 
-## Demonstration (Task 6) - gate blocks a high-risk vulnerability
+## Demonstration - gate blocks a high-risk vulnerability
 
 A throwaway branch added a known-vulnerable dependency (`org.apache.logging.log4j:log4j-core:2.14.1` -
 Log4Shell, CVE-2021-44228) to the module `pom.xml` and opened a PR into `dev`.
