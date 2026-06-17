@@ -3,10 +3,10 @@
 **Requirement:** S-18 (Epic 7) - prove the identified risks are understood and under control.
 **Status:** draft. This report consolidates existing analyses; it does not produce new analysis.
 
-> **Scope note (work in progress).** This draft consolidates the inputs available: the CIA/BIV analysis
-> (#29), the SBOM/SCA analysis (#17), the CI/CD risk evaluation, the bow-tie analysis (#33), the threat
-> model (#51, OWASP Threat Dragon / STRIDE), and the compliance report (#27). The security backlog (#35)
-> and penetration test findings (#36) are folded in once they land.
+> **Scope note.** This report consolidates: the CIA/BIV analysis (#29), the SBOM/SCA analysis (#17), the
+> CI/CD risk evaluation, the bow-tie analysis (#33), the threat model (#51, OWASP Threat Dragon / STRIDE),
+> the compliance report (#27), and the security backlog (#35). The penetration test (#36, on the
+> `Feature/pentest` branch) confirms finding F-01 and is referenced where relevant.
 
 ---
 
@@ -62,7 +62,7 @@ false positives (mitigated by the JDK 8 deployment or non-default configuration)
 **10 active Critical findings** remain, with contextual scores of 3.9-5.9. The highest are
 deserialization flaws in `commons-collections`, `commons-fileupload`, and `spring-web` (**5.9** each).
 Six have an available fix (PATCH); four are end-of-life or platform-blocked and are **accepted with
-compensating controls**, carried into the risk register in Section 7. All Critical CVEs are in
+compensating controls**, carried into the residual-risk summary (Section 7). All Critical CVEs are in
 `provided` (platform-supplied) dependencies, so remediation is constrained by OpenMRS platform
 compatibility.
 
@@ -288,8 +288,8 @@ fix exists and is recommended* (which is itself the valuable finding versus the 
 fix exists); **acting on it is out of our control** and belongs to whoever owns the platform/deployment.
 For the purpose of this project these PATCH items are handled as: documented recommendation in the
 security backlog (#35), with the residual risk accepted for now under the same compensating controls as
-the ACCEPT items (Section 6). The four ACCEPT items carry compensating controls and are recorded as
-accepted residual risk (Section 6).
+the ACCEPT items (Section 7). The four ACCEPT items carry compensating controls and are recorded as
+accepted residual risk (Section 7).
 
 ### 4.3 Process risks (treatment from the CI/CD evaluation)
 
@@ -419,3 +419,40 @@ Three mitigations give the most risk reduction for the least effort and should b
 2. **A-01 / A-03 / F-01** (M, High) - enforce the confidentiality privilege; the single most important
    own-code fix.
 3. **P-02** (M, High) - add a build/test stage, which also unblocks the BOM fix and code coverage.
+
+---
+
+## 6. Security Backlog (from #35)
+
+The prioritised security backlog lives in `security-requirements-mapping.md` (#35). It translates the
+risks in this report into eight actionable security requirements (SR-01 to SR-08), each with tasks,
+acceptance criteria, and NEN-7510 mappings. This section links that backlog to the register IDs from
+Section 3 and to the mitigation tracks, so every risk traces to a concrete work item and every backlog
+item traces back to a risk.
+
+### 6.1 Backlog-to-register mapping
+
+| SR | Requirement (short) | Register risks | Backlog priority | Execution (this project) |
+|----|---------------------|----------------|------------------|--------------------------|
+| SR-01 | RBAC on all appointment data | A-01, A-03, F-01 | Must do | **M1** - in scope; re-tested via #36 |
+| SR-02 | Protect sensitive notes / free-text fields | A-02 | Must do | **M1** - in scope (rides on SR-01) |
+| SR-03 | Enforce confidential-type privilege at every entry point | A-03, F-01 | Must do | **M1** - in scope; #36 |
+| SR-04 | Integrity controls for blocks / time slots | A-04 | Must do | **Deferred** (L effort) - residual accepted (Section 7) |
+| SR-05 | Harden audit trail (immutable logging) | A-06, A-07 | Should do | **M4** - overlaps sprint-3 logging (8.15) |
+| SR-06 | Secure coding for deserialization / injection | C-02/03/04/08, T-01 | Should do | Partial - covered by SR-07; XSS (T-01) deferred |
+| SR-07 | Dependency remediation backlog | C-02 to C-14 | Must do | Documented; **applying = External** (platform-provided) |
+| SR-08 | CI/CD security gates + branch protection | P-01, P-02, P-04, P-08 | Should do | **M2 / M3** - in scope |
+
+### 6.2 Reconciliation: backlog priority vs time-boxed execution
+
+The backlog's Must/Should priorities reflect the *ideal* order if effort were unconstrained. The actual
+execution this project follows is the time-boxed scope from Section 5 (tracks M1-M4):
+
+- **In scope now (M1-M4):** SR-01, SR-02, SR-03 (M1, access control), SR-08 (M2/M3, CI gates),
+  SR-05 (M4, logging).
+- **Deferred despite "Must do":** SR-04 (schedule integrity, L effort) and the *application* of SR-07's
+  patches (platform-`provided`, outside our control). Both are recorded as accepted residual risk in
+  Section 7 with justification - the backlog priority is retained so the gap stays visible, not hidden.
+
+This is a deliberate, documented divergence: the backlog says *what should happen*, Section 7 records
+*what we are accepting for now and why*.
