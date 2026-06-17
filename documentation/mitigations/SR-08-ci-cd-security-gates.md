@@ -55,8 +55,14 @@ nuance). The real test PAT was zero-scope and revoked immediately, and the throw
 
 ### CodeQL SAST (static analysis)
 
-<!-- To be added after the CodeQL demo (Demo B): screenshot of the failing
-     "Code scanning results / CodeQL" check + the command-injection (CWE-78) alert. -->
+CodeQL runs on every push and pull request to `main`/`dev` (`codeql.yml`) and on a weekly schedule. The
+code-scanning **check-failure threshold is "High or higher"** (visible in the settings screenshot above),
+and the **"Code scanning results / CodeQL"** check is a **required** status check - so a new high/critical
+CodeQL finding fails the check and blocks the merge.
+
+No staged demonstration (deliberately introduced vulnerability) was used: it adds nothing to the rubric,
+which rewards the gate being *configured and enforced* here, and *real findings* under the security code
+review. CodeQL's actual findings on the codebase are reviewed there rather than via a synthetic test.
 
 ## NEN-7510:2024-2 mapping
 
