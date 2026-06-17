@@ -34,6 +34,22 @@ The throwaway branch/PR was **closed without merging** - the vulnerable dependen
 product. This satisfies the acceptance criterion *"test case demonstrates a security gate blocking a PR
 with a high-risk vulnerability."*
 
+### Secret scanning + push protection
+
+Secret Protection and Push Protection are **enabled** on the repository (see screenshot). Push protection
+blocks commits containing **supported partner-pattern** secrets, focusing on verified / high-confidence
+detections. A live block using fabricated test secrets (an AWS key and a Google API key) was **not
+reproducible** - push protection relies on validity / high-confidence detection rather than pattern
+matching alone, so dummy values are not blocked. The control is enabled and would block a real, valid
+secret.
+
+![Code scanning, Secret Protection and Push Protection settings](../evidence/Code%20scanning%20sprint%203.png)
+
+### CodeQL SAST (static analysis)
+
+<!-- To be added after the CodeQL demo (Demo B): screenshot of the failing
+     "Code scanning results / CodeQL" check + the command-injection (CWE-78) alert. -->
+
 ## NEN-7510:2024-2 mapping
 
 - **8.29** (security testing) - failing checks are enforced in the pipeline
