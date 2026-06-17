@@ -133,6 +133,16 @@
             <version>2.2</version>
         </dependency>
 
+        <!-- TEMPORARY: security-gate demonstration (#76, Task 6).
+             Known-vulnerable: Log4Shell, CVE-2021-44228 (Critical). DO NOT MERGE. -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>2.14.1</version>
+        </dependency>
+
+
+
     </dependencies>
 
 	<build>
