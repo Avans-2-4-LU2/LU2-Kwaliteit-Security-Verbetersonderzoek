@@ -51,7 +51,7 @@ before the module is considered safe for release:
 - Confidential appointment types - **15** (confidentiality)
 - Appointment blocks and time slots - **15** (integrity, patient care)
 
-The single highest residual risk is **unauthorised disclosure of patient-linked appointment data**.
+The single highest-priority risk is **unauthorised disclosure of patient-linked appointment data**.
 The codebase defines a dedicated confidentiality privilege, but the control observations in #29 (Section 8)
 note there is not yet evidence that it is enforced consistently across all UI and API entry points - an
 access-control gap that the penetration test (#36) targets directly and that the threat model (#51)
@@ -147,6 +147,7 @@ cost estimates in Section 5.
 | Asset risks (#29 §7) | `Impact x Likelihood`, 1-25, with appetite bands (#29 §6) | 15-25 = Critical · 10-14 = High · 6-9 = Medium · 1-5 = Low |
 | Dependency / CVE risks (#17 §5) | Contextual score 0-9.8 (`CVSS x context`), after false-positive removal | >=7 = High · 4-6.9 = Medium · <4 = Low |
 | Process risks (CI/CD evaluation) | Qualitative High / Medium / Low | used directly |
+| Threat-model threats (#51 §3.5) | OWASP Threat Dragon 0-10 score | >=7 = High · 4-6.9 = Medium · <4 = Low (same cut-points as CVEs) |
 
 > **Note on the CVE band.** Generic CVSS rates all ten findings as *Critical* (9.1-9.8). After
 > contextual adjustment for our deployment (all `provided` scope, intranet, JDK 8), their real severity
@@ -337,18 +338,18 @@ to a NEN-7510:2024-2 control:
 | Regulatory sanctions | Incident-response plan | 5.24, 8.16 |
 
 This makes A-01's "Mitigate (required)" treatment concrete: the privilege-enforcement work (F-01 / A-03)
-is a *preventive* barrier, while the logging gap work scheduled for sprint 3 (#20/#21, control 8.15)
+is a *preventive* barrier, while the logging gap work scheduled for sprint 3 (S-20/S-21, control 8.15)
 supplies the *recovery* barriers (anomaly detection, audit logging). The diagram is in
 `evidence/bowtie-patient-data-access.png` (#33).
 
 ### 4.6 Control legend
 
 5.12 classification of information · 5.15 access control · 5.18 access rights · 5.19 supplier
-relationships · 5.22 monitoring/change-management of supplier services · 8.3 information access
-restriction · 8.4 access to source code & data · 8.8 technical vulnerabilities · 8.9 configuration
-management · 8.13 information backup · 8.15 logging · 8.24 use of cryptography · 8.25 secure development
-lifecycle · 8.26
-application security requirements · 8.28 secure coding · 8.29 security testing · 8.31 separation of
+relationships · 5.22 monitoring/change-management of supplier services · 5.24 incident-response planning ·
+8.3 information access restriction · 8.4 access to source code & data · 8.5 secure authentication ·
+8.8 technical vulnerabilities · 8.9 configuration management · 8.13 information backup · 8.15 logging ·
+8.16 monitoring of activities · 8.24 use of cryptography · 8.25 secure development lifecycle ·
+8.26 application security requirements · 8.28 secure coding · 8.29 security testing · 8.31 separation of
 environments · 8.32 change management.
 
 **Coverage check:** every finding in Section 3 has a treatment and maps to at least one specific control,
@@ -403,7 +404,7 @@ scheduled now or deferred (deferral is captured in the treatment, not the value)
 | C-11 (ACCEPT) | Disable XML external entities at parser config | S | Medium | Config hardening. |
 | C-13 (ACCEPT) | Restrict admin access, audit module uploads, monitor FS writes | M | Medium | Requires admin compromise first; defensive. |
 | P-01 | SCA `fail-build: true` + threshold | **S** | **High** | One-line change; turns a passive scan into a real gate. Quick win. |
-| P-02 | Add build + unit-test stage as required check | M | High | Also catches the BOM defect; enables coverage (#23). |
+| P-02 | Add build + unit-test stage as required check | M | High | Also catches the BOM defect; enables coverage (S-23). |
 | P-03 | Automated deployment via Environments | **L** | Medium | Largest CI/CD item; enforces the documented gates. |
 | P-04 | Add security gates as required checks | M | High | Bundles with P-01/P-02. |
 | P-05 | Pin Actions to commit SHAs | S | Medium | Mechanical; can be automated via Dependabot. |
@@ -432,16 +433,16 @@ item traces back to a risk.
 
 ### 6.1 Backlog-to-register mapping
 
-| SR | Requirement (short) | Register risks | Backlog priority | Execution (this project) |
-|----|---------------------|----------------|------------------|--------------------------|
-| SR-01 | RBAC on all appointment data | A-01, A-03, F-01 | Must do | **M1** - in scope; re-tested via #36 |
-| SR-02 | Protect sensitive notes / free-text fields | A-02 | Must do | **M1** - in scope (rides on SR-01) |
-| SR-03 | Enforce confidential-type privilege at every entry point | A-03, F-01 | Must do | **M1** - in scope; #36 |
-| SR-04 | Integrity controls for blocks / time slots | A-04 | Must do | **Deferred** (L effort) - residual accepted (Section 7) |
-| SR-05 | Harden audit trail (immutable logging) | A-06, A-07 | Should do | **M4** - overlaps sprint-3 logging (8.15) |
-| SR-06 | Secure coding for deserialization / injection | C-02/03/04/08, T-01 | Should do | Partial - covered by SR-07; XSS (T-01) deferred |
-| SR-07 | Dependency remediation backlog | C-02 to C-14 | Must do | Documented; **applying = External** (platform-provided) |
-| SR-08 | CI/CD security gates + branch protection | P-01, P-02, P-04, P-08 | Should do | **M2 / M3** - in scope |
+| SR | Issue | Requirement (short) | Register risks | Backlog priority | Execution (this project) |
+|----|-------|---------------------|----------------|------------------|--------------------------|
+| SR-01 | #69 | RBAC on all appointment data | A-01, A-03, F-01 | Must do | **M1** - in scope; re-tested via #36 |
+| SR-02 | #70 | Protect sensitive notes / free-text fields | A-02 | Must do | **M1** - in scope (rides on SR-01) |
+| SR-03 | #71 | Enforce confidential-type privilege at every entry point | A-03, F-01 | Must do | **M1** - in scope; #36 |
+| SR-04 | #72 | Integrity controls for blocks / time slots | A-04 | Must do | **Deferred** (L effort) - residual accepted (Section 7) |
+| SR-05 | #73 | Harden audit trail (immutable logging) | A-06, A-07 | Should do | **M4** - overlaps sprint-3 logging (8.15) |
+| SR-06 | #74 | Secure coding for deserialization / injection | C-02/03/04/08, T-01 | Should do | Partial - covered by SR-07; XSS (T-01) deferred |
+| SR-07 | #75 | Dependency remediation backlog | C-02 to C-14 | Must do | Documented; **applying = External** (platform-provided) |
+| SR-08 | #76 | CI/CD security gates + branch protection | P-01, P-02, P-04, P-08 | Should do | **M2 / M3** - in scope |
 
 ### 6.2 Reconciliation: backlog priority vs time-boxed execution
 
