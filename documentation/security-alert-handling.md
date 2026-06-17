@@ -108,14 +108,6 @@ Some suppressions depend on the deployment configuration. If the configuration d
 
 ---
 
-### Traceability
-
-All decisions regarding Grype findings are traceable through the Git history of `documentation/sbom-analysis.md`. Every change in this file is linked to a commit, author, and timestamp.
-
-This supports **A.5.28**, which requires that the organization establishes procedures for identifying, collecting, and preserving evidence related to information security events.
-
----
-
 ## Dismissal Authority
 
 Any contributor may propose a dismissal. For high or critical severity alerts, dismissal must be reviewed and approved by at least one other contributor before execution.
