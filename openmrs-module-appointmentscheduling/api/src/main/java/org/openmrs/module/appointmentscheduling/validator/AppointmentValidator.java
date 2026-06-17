@@ -67,5 +67,13 @@ public class AppointmentValidator implements Validator {
 			else if (type != null && !appointment.getTimeSlot().getAppointmentBlock().getTypes().contains(type))
 				errors.rejectValue("appointmentType", "appointmentscheduling.Appointment.notSupportedType");
 		}
+
+		if (errors.hasErrors()) {
+			String details = "Validation failed for appointment: " + errors.getErrorCount() + " errors.";
+			if (appointment != null && appointment.getPatient() != null) {
+				details += " Patient: " + appointment.getPatient().getPatientId();
+			}
+			org.openmrs.module.appointmentscheduling.api.SecurityLogger.logFailedAction("VALIDATE_APPOINTMENT_FAILED", details);
+		}
 	}
 }
