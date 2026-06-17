@@ -36,12 +36,20 @@ with a high-risk vulnerability."*
 
 ### Secret scanning + push protection
 
-Secret Protection and Push Protection are **enabled** on the repository (see screenshot). Push protection
-blocks commits containing **supported partner-pattern** secrets, focusing on verified / high-confidence
-detections. A live block using fabricated test secrets (an AWS key and a Google API key) was **not
-reproducible** - push protection relies on validity / high-confidence detection rather than pattern
-matching alone, so dummy values are not blocked. The control is enabled and would block a real, valid
-secret.
+Secret Protection and Push Protection are **enabled** in the repository settings (see screenshot below).
+
+We attempted to demonstrate a live push-protection block on a throwaway branch using three test secrets:
+two fabricated values (an AWS access-key pair and a Google API key) and one **real, zero-scope,
+immediately-revoked** GitHub fine-grained PAT. **None of the three pushes were blocked** - all were
+accepted by the remote.
+
+So the control is **enabled per settings**, but a live block could **not be reproduced** in our tests.
+This is recorded honestly as a **follow-up to investigate** - push-protection detection did not trigger on
+our test pushes (possible causes: detection confidence, fine-grained-token handling, or a configuration
+nuance). The real test PAT was zero-scope and revoked immediately, and the throwaway branch was deleted.
+
+> Note: GitHub's secret-scanning **alerts** detect committed secrets independently of push protection, so
+> detection/alerting may still function even though the push-time block did not trigger here.
 
 ![Code scanning, Secret Protection and Push Protection settings](../evidence/Code%20scanning%20sprint%203.png)
 
@@ -71,3 +79,6 @@ secret.
   `risk-assessment-report.md` §4.3); new vulnerable dependencies are blocked by Dependency Review.
 - Minor: the `deny-licenses` option in `dependency-review.yml` is deprecated (noted in the demo output) -
   candidate for a small future cleanup.
+- **Push protection follow-up:** enabled in settings but a live block was not reproducible (fabricated
+  secrets and a real zero-scope PAT all pushed through, see Demonstration). Investigate why detection did
+  not trigger on the test pushes.
