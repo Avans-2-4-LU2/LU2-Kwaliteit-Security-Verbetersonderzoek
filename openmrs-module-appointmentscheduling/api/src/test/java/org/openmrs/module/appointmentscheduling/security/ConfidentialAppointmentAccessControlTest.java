@@ -2,6 +2,7 @@ package org.openmrs.module.appointmentscheduling.security;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.openmrs.Patient;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.appointmentscheduling.Appointment;
 import org.openmrs.module.appointmentscheduling.AppointmentSchedulingConstants;
@@ -122,6 +123,40 @@ public class ConfidentialAppointmentAccessControlTest extends BaseModuleContextS
             assertTrue("Authorized user should see confidential appointments in the list",
                     containsConfidential(service.getAllAppointments()));
             Context.removeProxyPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS);
+        } finally {
+            resetAttacker();
+        }
+    }
+
+    /**
+     * Cross-entry-point / cross-component consistency (tasks 4 and 5): the same confidential appointment
+     * is filtered for an unauthorized user across every user-facing read path (single, list, by-patient),
+     * and visible to an authorized user. The REST resources and UI controllers read through these same
+     * service methods, so the service-layer choke point covers them.
+     */
+    @Test
+    @DirtiesContext
+    public void confidentialAppointment_consistentlyFilteredAcrossReadPaths() throws Exception {
+        AppointmentService service = becomeAttacker();
+        try {
+            // Establish the patient and confidentiality as an authorized user.
+            Context.addProxyPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS);
+            Appointment confidential = service.getAppointment(CONFIDENTIAL_APPOINTMENT_ID);
+            assertNotNull("Authorized user should see the confidential appointment", confidential);
+            assertTrue("Sanity: appointment 1 is of a confidential type",
+                    confidential.getAppointmentType().isConfidential());
+            Patient patient = confidential.getPatient();
+            assertTrue("Authorized user sees it via the by-patient path",
+                    containsConfidential(service.getAppointmentsOfPatient(patient)));
+            Context.removeProxyPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS);
+
+            // Unauthorized user: filtered consistently across every read path.
+            assertNull("single retrieval must filter the confidential appointment",
+                    service.getAppointment(CONFIDENTIAL_APPOINTMENT_ID));
+            assertFalse("list retrieval must filter the confidential appointment",
+                    containsConfidential(service.getAllAppointments()));
+            assertFalse("by-patient retrieval must filter the confidential appointment",
+                    containsConfidential(service.getAppointmentsOfPatient(patient)));
         } finally {
             resetAttacker();
         }

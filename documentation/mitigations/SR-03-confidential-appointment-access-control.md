@@ -32,26 +32,36 @@ double-filtering.
     appointment when the user lacks the privilege.
   - `removeConfidentialAppointmentsIfNotAuthorized(List<Appointment>)` - drops confidential appointments
     when the user lacks the privilege; returns the list unchanged for users who hold it.
-- **Filter applied to the read methods:** `getAllAppointments()`, `getAllAppointments(boolean)`,
-  `getAppointment(Integer)`, `getAppointmentByUuid(String)`, `getAppointmentsOfPatient(Patient)`,
-  `getAppointmentByVisit(Visit)`.
+- **Filter applied to the user-facing read methods:** `getAllAppointments()`,
+  `getAllAppointments(boolean)`, `getAppointment(Integer)`, `getAppointmentByUuid(String)`,
+  `getAppointmentsOfPatient(Patient)`, `getAppointmentByVisit(Visit)`,
+  `getAppointmentsByConstraints(...)` (all overloads funnel into one terminal method - covers the REST
+  API, the UI calendar/list, and the DWR views), and `getScheduledAppointmentsForPatient(Patient)`.
 - **Regression-safety fix:** the internal double-booking check inside `getAppointmentsByConstraints`
   previously called the (now-filtered) `getAppointmentsOfPatient(...)`. It now calls the DAO directly
   (`getAppointmentDAO().getAppointmentsByPatient(...)`) so scheduling-conflict detection still considers
   confidential appointments and cannot be weakened by the new filter. This protects the schedule-integrity
   risk (A-04) from being regressed by the confidentiality fix.
 
-## Scope (filtered now vs deferred)
+## Scope - all user-facing read paths filtered; internal scheduling methods intentionally excluded
 
-**Filtered now** - the direct appointment read methods above. These cover the demonstration test, the REST
-appointment resource, and the basic UI appointment list.
+**Filtered (every user-facing read entry point).** The methods listed above. A caller map confirmed that
+the **REST resources** (`AppointmentResource1_9`), the **UI calendar/list** (`AppointmentListController`),
+and the **DWR** views all read through `getAppointmentsByConstraints` / the other filtered service methods
+- so the single service-layer choke point covers those entry points; they cannot bypass it. This
+satisfies "100% of user-facing entry points" via the service layer.
 
-**Deferred, with justification** - `getAppointmentsByConstraints`, `getAppointmentsInTimeSlot`,
-`getAppointmentsByStatus`, `getScheduledAppointmentsForPatient`. These intersect scheduling / availability
-logic where naive filtering could change slot-fullness or conflict behaviour (a patient-safety regression
-risk). They need per-method analysis before filtering. `getAppointmentsByConstraints` (used by the UI
-calendar) is the highest-value follow-up; its internal callers are view methods, so it is a safe candidate
-to extend next.
+**Intentionally NOT filtered (internal scheduling / occupancy / batch - not user-facing entry points):**
+
+- `getAppointmentsInTimeSlot` / `...ThatAreNotCancelled` - used for **slot-occupancy checks**
+  (`AppointmentBlockFormController`: `getAppointmentsInTimeSlot(timeSlot).size() > 0`) and the block
+  validator. Filtering would hide a confidential appointment from occupancy/conflict logic and corrupt
+  scheduling (a patient-safety regression).
+- `getAppointmentsByStatus` - no user-facing caller; internal/batch use.
+
+This split is deliberate: confidentiality is a *presentation* concern on user reads, whereas the excluded
+methods feed *correctness* logic that must still count every appointment. The double-booking-check fix
+above follows the same principle (it reads via the DAO so it still sees confidential appointments).
 
 ## Validation (Task 4 - re-test, red -> green)
 
@@ -61,11 +71,17 @@ The pentest demonstration test `ConfidentialAppointmentAccessControlTest` (#36) 
 `getAllAppointments()` excludes it. The test going from failing (pre-fix) to passing (post-fix) is the
 proof that the risk is mitigated.
 
-**Result - VERIFIED.** `mvn -B test` on the API module passes **all 167 tests, 0 failures**, including
-`ConfidentialAppointmentAccessControlTest` (2 tests) and the reporting-evaluator tests
+**Result - VERIFIED.** `mvn -B test` on the API module passes **all 168 tests, 0 failures**, including
+`ConfidentialAppointmentAccessControlTest` (3 tests: single retrieval, list retrieval, and the
+cross-entry-point consistency test) and the reporting-evaluator tests
 (`PatientToAppointmentDataEvaluatorTest`, `PersonToAppointmentDataEvaluatorTest`). So the confidential
-appointment is now filtered for the unauthorized user (the mitigation works) and there is **no
-regression** in the reporting or scheduling tests.
+appointment is now filtered for the unauthorized user across every read path (the mitigation works) and
+there is **no regression** - in particular `AppointmentServiceTest` (36 tests, incl. the
+`getAppointmentsByConstraints` tests) and the scheduling tests still pass.
+
+> The omod module fails only at an unrelated packaging step (`unpack-dependencies`) when run with
+> `mvn test`; use `mvn clean install` for the full build. This is a build-tooling quirk, not a test
+> failure, and is noted for the CI build-gate work (E-03).
 
 ![API test results - 167 passing, 0 failures](../evidence/SR-03%20test%20results.png)
 

@@ -859,7 +859,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 
 		}
 
-		return appointmentsInLocation;
+		return removeConfidentialAppointmentsIfNotAuthorized(appointmentsInLocation);
 
 	}
 
@@ -1036,7 +1036,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	@Override
 	@Transactional(readOnly = true)
 	public List<Appointment> getScheduledAppointmentsForPatient(Patient patient) {
-		return appointmentDAO.getScheduledAppointmentsForPatient(patient);
+		return removeConfidentialAppointmentsIfNotAuthorized(appointmentDAO.getScheduledAppointmentsForPatient(patient));
 	}
 
 	@Override
