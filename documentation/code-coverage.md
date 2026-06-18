@@ -91,6 +91,14 @@ Coverage is therefore used as a supporting quality metric rather than as a stand
 
 Aggregate coverage (72% lines) says nothing about whether the highest-risk assets are tested. The table below cross-references every asset from the CIA risk register (`cia-analysis.md` §5/§7) against the **branch coverage** of the class(es) that implement it, measured by JaCoCo (`mvn -pl api clean test`, `api/target/site/jacoco/jacoco.xml`). Branch coverage is used here instead of line coverage because it better reflects whether both outcomes of a decision (e.g. "is this appointment confidential?", "does this overlap?") were actually exercised by a test, not just whether the line ran.
 
+### Verdict Definitions
+
+- **Adequate** — a test exists that explicitly creates the risky scenario and asserts it is rejected or handled correctly. The negative case is proven, not assumed.
+- **Partial** — the "happy path" is tested, but either the negative/denied case is missing, or the control works correctly in one place but is not applied consistently everywhere it is needed.
+- **Gap** — no test proves the risk is mitigated. Either the production code for that control does not exist yet, or the existing test actually demonstrates that the vulnerability is still present.
+
+**Methodology:** the verdict was never read off the coverage percentage alone. For each asset, the test source code was read directly — what it actually constructs and asserts — and cross-checked against the relevant production code and the project's existing security documentation (`pentest-report.md`, `security-requirements-mapping.md`). Coverage percentages are supporting evidence for *how much* of a class was exercised; they do not say *whether* the exercised behaviour is the safe behaviour. This is why a class can show 90% coverage and still get a "Gap" verdict (see Appointment Records below).
+
 | CIA Asset | Risk Score | Branch Coverage | Tests Reviewed | Verdict |
 | --- | --- | --- | --- | --- |
 | Appointment records | 20 | 78.1% | `AppointmentServiceTest`, `ConfidentialAppointmentAccessControlTest` | Gap |
@@ -117,7 +125,7 @@ AppointmentServiceImpl
 
 **Explanation**
 
-Although `AppointmentServiceImpl` achieves high line and branch coverage, the confidentiality vulnerability identified in issue #36 remains present. The existing `ConfidentialAppointmentAccessControlTest` demonstrates the information disclosure vulnerability rather than verifying that access is denied. Therefore the dominant CIA risk remains unmitigated despite high coverage.
+Although `AppointmentServiceImpl` achieves high line and branch coverage, the confidentiality vulnerability identified in issue #36 remains present. The existing `ConfidentialAppointmentAccessControlTest` demonstrates the information disclosure vulnerability rather than verifying that access is denied. Therefore the dominant CIA risk remains unmitigated despite high coverage. 
 
 #### Confidential Appointment Types
 
@@ -137,7 +145,7 @@ PatientToAppointmentDataEvaluator / PersonToAppointmentDataEvaluator
 
 **Explanation**
 
-The two reporting evaluators that actually enforce the confidentiality privilege are well tested, and a passing test (`evaluate_shouldReturnPatientDataForNonConfidentialAppointments`) proves confidential appointments are correctly filtered out of report exports. The same privilege check is never applied in `AppointmentServiceImpl` (see above), so the same appointment is hidden in reports but fully exposed through the core service and REST API — high coverage on both ends hides an inconsistency between them.
+The two reporting evaluators that actually enforce the confidentiality privilege are well tested, and a passing test (`evaluate_shouldReturnPatientDataForNonConfidentialAppointments`) proves confidential appointments are correctly filtered out of report exports. The same privilege check is never applied in `AppointmentServiceImpl` (see above), so the same appointment is hidden in reports but fully exposed through the core service and REST API — high coverage on both ends hides an inconsistency between them. Mapped to SR-03: extending the privilege check to the core/REST paths is required before this can move to "Adequate."
 
 #### Appointment Requests and Notes
 
@@ -182,10 +190,12 @@ The core integrity rule — rejecting overlapping/double-booked appointment bloc
 ProviderScheduleValidator
 - Line Coverage: 86.7%
 - Branch Coverage: 50%
+- Methods Covered: 100%
 
 HibernateProviderScheduleDAO
 - Line Coverage: 84.6%
 - Branch Coverage: 72.2%
+- Methods Covered: 100%
 ```
 
 **Explanation**
@@ -233,9 +243,11 @@ AppointmentServiceImpl (41 @Authorized checks)
 
 **Explanation**
 
-Every privilege-gated method is exercised under an authorized user, but no test exercises the *denied* path for any of the 41 `@Authorized` checks — except the confidentiality privilege, where the existing test proves the opposite of what's intended (see "Appointment Records" above).
+Every privilege-gated method is exercised under an authorized user, but no test exercises the *denied* path for any of the 41 `@Authorized` checks — except the confidentiality privilege, where the existing test proves the opposite of what's intended (see "Appointment Records" above). Adding denied-access tests for the remaining checks is in scope of SR-01.
 
 **Reading the matrix:** of the four risks scored ≥15, only schedule integrity (appointment blocks/time slots) is adequately tested. All three confidentiality risks trace back to the same root cause — `PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS` is enforced in the reporting evaluators but not in the core service, REST, or web layers — and this is an open, reproducible finding (`pentest-report.md` F-01, issue #36), not a blind spot in this analysis.
+
+**This matrix is the baseline for the project, not a one-off report.** It should be re-run and re-read whenever a relevant security requirement (SR-01 through SR-08) is implemented, so a verdict only moves from "Gap" or "Partial" to "Adequate" once a test exists that actually proves the negative case — not because the surrounding code's line/branch percentage went up. Concretely: every time a Gap/Partial item is closed in the backlog, this section should be regenerated against the new JaCoCo report and the affected explanation updated, so the document keeps reflecting what is actually proven rather than what was once true.
 
 ### Limitations of Coverage Metrics
 
