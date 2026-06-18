@@ -53,6 +53,13 @@
 		<calculationModuleVersion>1.0</calculationModuleVersion>
 		<reportingModuleVersion>0.9.2</reportingModuleVersion>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<sonar.organization>avans-2-4-lu2</sonar.organization>
+		<sonar.projectKey>
+			Avans-2-4-LU2_LU2-Kwaliteit-Security-Verbetersonderzoek
+		</sonar.projectKey>
+		<sonar.coverage.jacoco.xmlReportPaths>
+			api/target/site/jacoco/jacoco.xml
+		</sonar.coverage.jacoco.xmlReportPaths>
 	</properties>
 
     <dependencies>
