@@ -307,6 +307,76 @@ No patch available for OpenMRS 1.9.9. Fix requires platform upgrade to 2.x.
 
 ---
 
+## ACCEPT-Risk-005: Struts Framework Vulnerabilities (Platform Dependency)
+
+* **Risk ID:** PLAT-005
+* **Related Finding:** H-06
+* **CVE:** Multiple (e.g., Struts-core, Struts-tiles)
+* **Identification Date:** 2026-06-18
+* **Record Created:** 2026-06-18
+
+### Vulnerability Summary
+
+| Field | Value |
+| :--- | :--- |
+| **Package** | struts-core, struts-tiles |
+| **Scope** | Provided |
+| **CVSS** | High (Multiple) |
+| **Threat** | Potential RCE or unauthorized access via framework exploits |
+| **Library Status** | Legacy version tied to OpenMRS 1.9.9 platform |
+
+### Why Fix is Not Available
+The Struts framework is deeply embedded in the OpenMRS platform architecture. Upgrading these libraries requires a major platform refactoring, which is not feasible within the scope of this individual module. 
+
+### Risk Assessment
+* **Likelihood (1-5):** 2 (Low)
+* **Impact (1-5):** 5 (Critical)
+* **Risk Score:** 10 (Medium-High Risk)
+
+### Compensating Controls
+**1. Network Isolation:** Intranet deployment limits external exposure.
+**2. Access Control:** Strict authentication requirements restrict exploitation to authenticated sessions.
+
+### Mitigation Actions
+* **Must Have:** Intranet deployment, active monitoring for unauthorized access.
+
+---
+
+## ACCEPT-Risk-006: Spring Framework High Vulnerabilities (Platform Dependency)
+
+* **Risk ID:** PLAT-006
+* **Related Finding:** H-02
+* **CVE:** Multiple (spring-webmvc, spring-core, spring-beans, spring-context, spring-expression)
+* **Identification Date:** 2026-06-18
+* **Record Created:** 2026-06-18
+
+### Vulnerability Summary
+
+| Field | Value |
+| :--- | :--- |
+| **Package** | spring-* (3.0.5.RELEASE) |
+| **Scope** | Provided |
+| **CVSS** | High (Multiple) |
+| **Threat** | Potential for injection and other framework-level exploits |
+| **Library Status** | Platform dependency incompatible with modern Spring 5/6 releases |
+
+### Why Fix is Not Available
+OpenMRS 1.9.9 uses Spring 3.x and upgrading to a version that patches these high vulnerabilities (Spring 5 or 6) breaks compatibility with the platform's Java 1.6/1.8 base.
+
+### Risk Assessment
+* **Likelihood (1-5):** 2 (Low)
+* **Impact (1-5):** 5 (Critical)
+* **Risk Score:** 10 (Medium-High Risk)
+
+### Compensating Controls
+**1. Network Isolation:** Intranet deployment only.
+**2. Input Validation:** Application-level validation prevents malformed data from reaching vulnerable framework features.
+
+### Mitigation Actions
+* **Must Have:** Verify intranet deployment and enforce application-level input validation.
+
+---
+
 ## Risk Register Summary Table
 
 | Risk ID | CVE | Package | Fix Available | Likelihood | Impact | Score | Compensating Control | Owner |
@@ -315,6 +385,8 @@ No patch available for OpenMRS 1.9.9. Fix requires platform upgrade to 2.x.
 | **PLAT-002** | CVE-2019-10202 | jackson-mapper-asl 1.5.0 | No (EOL) | 2 | 5 | **10** | JSON validation, XXE config | App Team |
 | **PLAT-003** | CVE-2020-10683 | dom4j 1.6.1 | No (EOL 1.x) | 2 | 5 | **10** | XXE protection (JVM config) | DevOps Team |
 | **PLAT-004** | CVE-2026-40076 | openmrs-web 1.9.9 | No (EOL platform) | 1 | 5 | **5** | Admin access control, audit logging | Security Lead |
+| **PLAT-005** | Multiple | struts-* | No (platform dependency) | 2 | 5 | **10** | Network isolation, access control | Deployment Lead |
+| **PLAT-006** | Multiple | spring-* 3.0.5 | No (platform incompatible) | 2 | 5 | **10** | Network isolation, input validation | Deployment Lead |
 
 **Overall Risk Assessment:** Accepted risks are mitigated by compensating controls. All risk scores are within acceptable tolerance given platform EOL constraints.
 
@@ -338,6 +410,8 @@ No patch available for OpenMRS 1.9.9. Fix requires platform upgrade to 2.x.
 | **PLAT-002:** Jackson ObjectMapper type inference disabled | App Team | Before production | [ ] Verified |
 | **PLAT-003:** XXE protection enabled | DevOps Team | Before production | [ ] Verified |
 | **PLAT-004:** Admin access control, audit logging | Security Lead | Before production | [ ] Verified |
+| **PLAT-005:** Network isolation and monitoring for Struts | Deployment Lead | Before production | [ ] Verified |
+| **PLAT-006:** Network isolation and validation for Spring | Deployment Lead | Before production | [ ] Verified |
 
 ---
 
