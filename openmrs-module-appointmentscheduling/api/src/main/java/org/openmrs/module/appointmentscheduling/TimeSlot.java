@@ -28,7 +28,14 @@ public class TimeSlot extends BaseOpenmrsData {
 	private Date startDate;
 	
 	private Date endDate;
-	
+
+	/**
+	 * Optimistic-locking version, maintained by Hibernate. Detects concurrent edits to the same
+	 * time slot so the second writer gets a StaleObjectStateException instead of silently
+	 * overwriting the first writer's changes (SR-04, NEN-7510 8.26/8.29).
+	 */
+	private Integer version;
+
 	public TimeSlot() {
 		
 	}
@@ -90,5 +97,13 @@ public class TimeSlot extends BaseOpenmrsData {
 	public void setEndDate(Date endDate) {
 		this.endDate = endDate;
 	}
-	
+
+	public Integer getVersion() {
+		return version;
+	}
+
+	public void setVersion(Integer version) {
+		this.version = version;
+	}
+
 }

@@ -21,6 +21,7 @@ import org.openmrs.api.context.Context;
 import org.openmrs.module.appointmentscheduling.Appointment;
 import org.openmrs.module.appointmentscheduling.AppointmentBlock;
 import org.openmrs.module.appointmentscheduling.AppointmentType;
+import org.openmrs.module.appointmentscheduling.ProviderSchedule;
 import org.openmrs.module.appointmentscheduling.TimeSlot;
 import org.openmrs.module.appointmentscheduling.api.AppointmentService;
 import org.springframework.validation.Errors;
@@ -29,6 +30,7 @@ import org.springframework.validation.Validator;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -58,6 +60,8 @@ public class AppointmentBlockValidator implements Validator {
 	 * <strong>Should</strong> pass validation if all required fields have proper values
 	 * <strong>Should</strong> fail validation if start date is not before end date
 	 * <strong>Should</strong> fail validation if a new appointment block starts in the past
+	 * <strong>Should</strong> fail validation if a new appointment block falls outside all of the provider's schedules, when the provider has at least one schedule defined
+	 * <strong>Should</strong> pass validation if the provider has no schedules defined at all
 	 */
 
 	public void validate(Object obj, Errors errors) {
@@ -85,6 +89,28 @@ public class AppointmentBlockValidator implements Validator {
 				errors.rejectValue("provider", "appointmentscheduling.AppointmentBlock.error.appointmentBlockOverlap");
 			}
 
+			if (appointmentBlock.getAppointmentBlockId() == null && appointmentBlock.getProvider() != null
+			        && appointmentBlock.getLocation() != null && appointmentBlock.getStartDate() != null
+			        && appointmentBlock.getEndDate() != null) {
+				List<ProviderSchedule> schedules = Context.getService(AppointmentService.class)
+				        .getProviderSchedulesByConstraints(appointmentBlock.getLocation(), appointmentBlock.getProvider(), null);
+				// fail-open: only enforced once the provider actually has at least one schedule defined. If none
+				// exist, there is no basis to judge availability, so the booking is allowed (see
+				// documentation/mitigations/schedule-integrity-controls.md for the rationale).
+				if (!schedules.isEmpty()) {
+					boolean providerAvailable = false;
+					for (ProviderSchedule schedule : schedules) {
+						if (coversDateRange(schedule, appointmentBlock) && coversTimeOfDay(schedule, appointmentBlock)) {
+							providerAvailable = true;
+							break;
+						}
+					}
+					if (!providerAvailable) {
+						errors.rejectValue("provider", "appointmentscheduling.AppointmentBlock.error.providerNotAvailable");
+					}
+				}
+			}
+
             Set<AppointmentType> types = appointmentBlock.getTypes();
             if (types == null) {
                 ValidationUtils.rejectIfEmpty(errors, "types", "appointmentscheduling.AppointmentBlock.emptyTypes");
@@ -100,5 +126,21 @@ public class AppointmentBlockValidator implements Validator {
                 }
             }
 		}
+	}
+
+	private boolean coversDateRange(ProviderSchedule schedule, AppointmentBlock appointmentBlock) {
+		return !schedule.getStartDate().after(appointmentBlock.getStartDate())
+		        && !schedule.getEndDate().before(appointmentBlock.getEndDate());
+	}
+
+	private boolean coversTimeOfDay(ProviderSchedule schedule, AppointmentBlock appointmentBlock) {
+		return secondsOfDay(appointmentBlock.getStartDate()) >= secondsOfDay(schedule.getStartTime())
+		        && secondsOfDay(appointmentBlock.getEndDate()) <= secondsOfDay(schedule.getEndTime());
+	}
+
+	private int secondsOfDay(Date date) {
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(date);
+		return cal.get(Calendar.HOUR_OF_DAY) * 3600 + cal.get(Calendar.MINUTE) * 60 + cal.get(Calendar.SECOND);
 	}
 }
