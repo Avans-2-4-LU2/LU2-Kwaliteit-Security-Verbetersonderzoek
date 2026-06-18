@@ -89,20 +89,153 @@ Coverage is therefore used as a supporting quality metric rather than as a stand
 
 ### Coverage Traceability Matrix
 
-The table below maps every asset from the CIA risk register (`cia-analysis.md` §5/§7) to the class(es) that implement it, the **per-class line coverage** measured by JaCoCo (`mvn -pl api clean test`, `api/target/site/jacoco/jacoco.xml`), the automated test(s) that exercise it, and a verdict based on reading what those tests actually assert — not just whether the lines were executed.
+Aggregate coverage (72% lines) says nothing about whether the highest-risk assets are tested. The table below cross-references every asset from the CIA risk register (`cia-analysis.md` §5/§7) against the **branch coverage** of the class(es) that implement it, measured by JaCoCo (`mvn -pl api clean test`, `api/target/site/jacoco/jacoco.xml`). Branch coverage is used here instead of line coverage because it better reflects whether both outcomes of a decision (e.g. "is this appointment confidential?", "does this overlap?") were actually exercised by a test, not just whether the line ran.
 
-| CIA Asset | Risk Score | Key Class(es) | Line Coverage | Test(s) | What Is Actually Verified | Verdict |
-| --- | --- | --- | --- | --- | --- | --- |
-| Appointment records | 20 (Unacceptable) | `AppointmentServiceImpl` | 90.4% (412/456) | `AppointmentServiceTest`, `ConfidentialAppointmentAccessControlTest` | CRUD and constraint-based retrieval are well covered. However, `ConfidentialAppointmentAccessControlTest` is a documented penetration-test case (issue #36) that **passes by proving a leak**: a user with only "View Appointments" can read a confidential appointment via `getAppointment()` / `getAllAppointments()`. The fix exists on a separate branch (`Mitigation/SR-03`) but is not yet merged into this branch. | Gap — high line coverage, but the dominant confidentiality risk is demonstrated-unmitigated, not tested-safe. |
-| Confidential appointment types | 15 (Unacceptable) | `AppointmentType` (63.6%), `AppointmentTypeValidator` (94.6%) | see above | `AppointmentTypeServiceTest` (incl. `saveAppointmentType_shouldSaveConfidentialAppointmentType`), `PatientToAppointmentDataEvaluatorTest` / `PersonToAppointmentDataEvaluatorTest` (100%) | The `confidential` flag persists correctly, and the **reporting export path** correctly filters confidential appointments for an unprivileged user (`evaluate_shouldReturnPatientDataForNonConfidentialAppointments`). The **core service and REST paths do not** — same root cause as the row above (`PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS` is only referenced in the two reporting evaluators, never in `AppointmentService.java`). | Partially tested — enforcement is inconsistent between entry points, and only the safe path is proven. |
-| Appointment requests and notes | 15 (Unacceptable) | `AppointmentRequest` (95%), `AppointmentRequestValidator` (90.9%) | see above | `AppointmentRequestServiceTest` | CRUD, validation, and void/unvoid lifecycle are covered. No test (and no production code) masks or restricts the free-text `reason` / `cancel_reason` fields for unauthorized users, or verifies they are excluded from logs (SR-02 is not implemented yet). | Gap — functional coverage only; the confidentiality control itself does not exist. |
-| Appointment blocks and time slots | 15 (Unacceptable) | `AppointmentBlock` (84.8%), `AppointmentBlockValidator` (90.9%), `TimeSlot` (76%), `TimeSlotValidator` (90%) | see above | `AppointmentBlockValidatorComponentTest` (e.g. `shouldNotAllowCreationOfOverlappingAppointmentBlock`), `TimeSlotServiceTest` | Overlap / double-booking is explicitly created and rejected in a test. Void/unvoid and constraint-based retrieval are also covered. | Adequately tested. |
-| Provider schedules | 8 (Acceptable w/ mitigation) | `ProviderSchedule` (92.3%), `ProviderScheduleValidator` (86.7%), `HibernateProviderScheduleDAO` (84.6%) | see above | `ProviderScheduleServiceTest` | CRUD and validation paths are covered. | Adequately tested. |
-| Appointment status history | 8 (Acceptable w/ mitigation) | `AppointmentStatusHistory` (88.5%), `AppointmentStatusHistoryValidator` (85.7%) | see above | `AppointmentStatusHistoryServiceTest` | Save, retrieval, and status-change transitions are covered. No test asserts that historical records are immutable or protected from tampering after creation (SR-05 not implemented). | Partially tested — functional behaviour only, no tamper-resistance evidence. |
-| Audit metadata (creator, changed-by, void reasons) | 8 (Acceptable w/ mitigation) | Inherited `Auditable` / `Voidable` fields on `Appointment`, `AppointmentType`, etc. | n/a (platform base class) | None dedicated | No module-specific test verifies these fields resist modification through a normal (non-admin) module operation. Coverage of the entity classes does not, by itself, exercise this guarantee. | Gap — relies entirely on unverified OpenMRS platform behaviour. |
-| UI and privilege configuration | 8 (Acceptable w/ mitigation) | `AppointmentService.java` (41 `@Authorized` annotations) | 90.4% (via `AppointmentServiceImpl`) | `AppointmentServiceTest` | Tests exercise the *authorized* path for each privilege (e.g. `PRIV_VIEW_APPOINTMENTS`, `PRIV_MANAGE_APPOINTMENT_BLOCKS`). No test asserts that a user **lacking** a given privilege is denied — except the confidentiality privilege, where the existing test proves the opposite (see row 1). | Partially tested — "happy path" authorization only; negative/denied-access cases are missing. |
+| CIA Asset | Risk Score | Branch Coverage | Tests Reviewed | Verdict |
+| --- | --- | --- | --- | --- |
+| Appointment records | 20 | 78.1% | `AppointmentServiceTest`, `ConfidentialAppointmentAccessControlTest` | Gap |
+| Confidential appointment types | 15 | 86–96% | `AppointmentTypeServiceTest`, `PatientToAppointmentDataEvaluatorTest`, `PersonToAppointmentDataEvaluatorTest` | Partial |
+| Appointment requests and notes | 15 | 50% | `AppointmentRequestServiceTest` | Gap |
+| Appointment blocks and time slots | 15 | 50–86% | `AppointmentBlockValidatorComponentTest`, `TimeSlotServiceTest` | Adequate |
+| Provider schedules | 8 | 50–72% | `ProviderScheduleServiceTest` | Adequate |
+| Appointment status history | 8 | 50% | `AppointmentStatusHistoryServiceTest` | Partial |
+| Audit metadata | 8 | N/A | None dedicated | Gap |
+| UI and privilege configuration | 8 | 78.1% | `AppointmentServiceTest` | Partial |
 
-**Reading the matrix:** of the four "Unacceptable" (score ≥15) confidentiality/integrity risks, only the integrity risk (appointment blocks/time slots) is adequately tested. All three confidentiality risks share the same root cause — `PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS` is enforced in the reporting evaluators but not in the core service, REST, or web layers — and this is not a blind spot in the analysis: it is an open, reproducible finding (`pentest-report.md` F-01, issue #36) with a passing test that documents the leak rather than preventing it. This is the concrete illustration of why 72% line coverage cannot be read as "the module is adequately tested": the uncovered or shallow-covered 28%, and even some of the covered 72%, is concentrated in exactly the areas the CIA analysis flagged as highest-risk.
+Per asset:
+
+#### Appointment Records
+
+**Relevant Metrics**
+
+```
+AppointmentServiceImpl
+- Line Coverage: 90.4%
+- Branch Coverage: 78.1%
+- Methods Covered: 95%
+```
+
+**Explanation**
+
+Although `AppointmentServiceImpl` achieves high line and branch coverage, the confidentiality vulnerability identified in issue #36 remains present. The existing `ConfidentialAppointmentAccessControlTest` demonstrates the information disclosure vulnerability rather than verifying that access is denied. Therefore the dominant CIA risk remains unmitigated despite high coverage.
+
+#### Confidential Appointment Types
+
+**Relevant Metrics**
+
+```
+AppointmentTypeValidator
+- Line Coverage: 94.6%
+- Branch Coverage: 96.2%
+- Methods Covered: 90.9%
+
+PatientToAppointmentDataEvaluator / PersonToAppointmentDataEvaluator
+- Line Coverage: 100%
+- Branch Coverage: 85.7%
+- Methods Covered: 100%
+```
+
+**Explanation**
+
+The two reporting evaluators that actually enforce the confidentiality privilege are well tested, and a passing test (`evaluate_shouldReturnPatientDataForNonConfidentialAppointments`) proves confidential appointments are correctly filtered out of report exports. The same privilege check is never applied in `AppointmentServiceImpl` (see above), so the same appointment is hidden in reports but fully exposed through the core service and REST API — high coverage on both ends hides an inconsistency between them.
+
+#### Appointment Requests and Notes
+
+**Relevant Metrics**
+
+```
+AppointmentRequestValidator
+- Line Coverage: 90.9%
+- Branch Coverage: 50%
+- Methods Covered: 100%
+```
+
+**Explanation**
+
+The missed branch is a defensive `if (obj == null)` check that tests never trigger — not a security control. The real gap is elsewhere: no test, and no production code, masks the free-text `reason` / `cancel_reason` fields or keeps them out of logs for users without the right privilege. SR-02 has not been implemented yet, so there is nothing to test.
+
+#### Appointment Blocks and Time Slots
+
+**Relevant Metrics**
+
+```
+AppointmentBlockValidator
+- Line Coverage: 90.9%
+- Branch Coverage: 85.7%
+- Methods Covered: 100%
+
+TimeSlotValidator
+- Line Coverage: 90%
+- Branch Coverage: 50%
+- Methods Covered: 100%
+```
+
+**Explanation**
+
+The core integrity rule — rejecting overlapping/double-booked appointment blocks — is explicitly created and asserted in `shouldNotAllowCreationOfOverlappingAppointmentBlock`. `TimeSlotValidator`'s lower branch score is the same untested null-check pattern seen above, not a missed integrity rule. The one real gap is concurrency: no test verifies that parallel writes can't corrupt schedule state (called for in SR-04).
+
+#### Provider Schedules
+
+**Relevant Metrics**
+
+```
+ProviderScheduleValidator
+- Line Coverage: 86.7%
+- Branch Coverage: 50%
+
+HibernateProviderScheduleDAO
+- Line Coverage: 84.6%
+- Branch Coverage: 72.2%
+```
+
+**Explanation**
+
+CRUD and validation are exercised by `ProviderScheduleServiceTest`. The validator's partial branch score is again the unexercised null-check branch, not a missing business rule.
+
+#### Appointment Status History
+
+**Relevant Metrics**
+
+```
+AppointmentStatusHistoryValidator
+- Line Coverage: 85.7%
+- Branch Coverage: 50%
+- Methods Covered: 100%
+```
+
+**Explanation**
+
+Save, retrieval, and status-change transitions are tested. No test verifies that a historical record cannot be altered after creation — that tamper-resistance guarantee (SR-05) is unverified.
+
+#### Audit Metadata (creator, changed-by, void reasons)
+
+**Relevant Metrics**
+
+```
+No dedicated class — fields are inherited from the OpenMRS
+Auditable / Voidable base classes.
+```
+
+**Explanation**
+
+No module-specific test checks that creator, changed-by, or void-reason fields resist modification through a normal (non-admin) module operation. This relies entirely on unverified platform behaviour.
+
+#### UI and Privilege Configuration
+
+**Relevant Metrics**
+
+```
+AppointmentServiceImpl (41 @Authorized checks)
+- Line Coverage: 90.4%
+- Branch Coverage: 78.1%
+- Methods Covered: 95%
+```
+
+**Explanation**
+
+Every privilege-gated method is exercised under an authorized user, but no test exercises the *denied* path for any of the 41 `@Authorized` checks — except the confidentiality privilege, where the existing test proves the opposite of what's intended (see "Appointment Records" above).
+
+**Reading the matrix:** of the four risks scored ≥15, only schedule integrity (appointment blocks/time slots) is adequately tested. All three confidentiality risks trace back to the same root cause — `PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS` is enforced in the reporting evaluators but not in the core service, REST, or web layers — and this is an open, reproducible finding (`pentest-report.md` F-01, issue #36), not a blind spot in this analysis.
 
 ### Limitations of Coverage Metrics
 
