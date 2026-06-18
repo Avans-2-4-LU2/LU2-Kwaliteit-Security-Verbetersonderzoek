@@ -290,18 +290,17 @@ public class AppointmentBlockServiceTest extends BaseModuleContextSensitiveTest 
 	@Test
 	@Verifies(value = "allow overlapping providerless appointment blocks", method = "getOverlappingAppointmentBlocks(AppointmentBlock)")
 	public void getOverlappingAppointmentBlocks_shouldAllowOverlappingProviderlessAppointmentBlocks() throws Exception {
-		// the test dataset has a block from 2005-01-01 00:00:00.0 - 11:00:00.0 with provider 1 at location 3
-		// we will also create a providerless block at the same time; neither of these should overlap with a third block
-		// at the same time that is also providerless
-		
-		Date fromDate = DateUtils.parseDate("2005-01-01 00:00", "yyyy-MM-dd HH:mm");
-		Date toDate = DateUtils.parseDate("2005-01-01 11:00", "yyyy-MM-dd HH:mm");
+		// we create a providerless block; a providerless block should never be reported as overlapping anything,
+		// since the overlap query is scoped per-provider. Uses a future date since this is a brand new block.
+
+		Date fromDate = DateUtils.addYears(new Date(), 1);
+		Date toDate = DateUtils.addHours(fromDate, 11);
 		Location atLocation = locationService.getLocation(3);
 		Set<AppointmentType> appointmentTypes = service.getAllAppointmentTypes();
-		
+
 		AppointmentBlock block = new AppointmentBlock(fromDate, toDate, null, atLocation, appointmentTypes);
 		service.saveAppointmentBlock(block);
-		
+
 		assertThat(service.getOverlappingAppointmentBlocks(block).size(), is(0));
 	}
 	

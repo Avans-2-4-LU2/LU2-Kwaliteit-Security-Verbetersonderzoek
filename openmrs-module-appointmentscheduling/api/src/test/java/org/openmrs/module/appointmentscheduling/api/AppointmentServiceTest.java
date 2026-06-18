@@ -24,17 +24,20 @@ import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.appointmentscheduling.Appointment;
 import org.openmrs.module.appointmentscheduling.Appointment.AppointmentStatus;
+import org.openmrs.module.appointmentscheduling.AppointmentBlock;
 import org.openmrs.module.appointmentscheduling.AppointmentType;
 import org.openmrs.module.appointmentscheduling.TimeSlot;
 import org.openmrs.module.appointmentscheduling.exception.TimeSlotFullException;
 import org.openmrs.test.BaseModuleContextSensitiveTest;
 import org.openmrs.test.Verifies;
+import org.openmrs.util.OpenmrsUtil;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -116,10 +119,18 @@ public class AppointmentServiceTest extends BaseModuleContextSensitiveTest {
 	@Test
 	@Verifies(value = "should save new appointment", method = "saveAppointment(Appointment)")
 	public void saveAppointment_shouldSaveNewAppointment() throws Exception {
+		// a brand new time slot must fall within its appointment block and not be dated in the past, so it needs a
+		// present-day parent block rather than the dataset's historical appointment block #1 (2005-01-01)
+		Date started = new Date();
+		AppointmentBlock appointmentBlock = new AppointmentBlock(started, OpenmrsUtil.getLastMomentOfDay(started),
+		    service.getAppointmentBlock(1).getProvider(), new Location(1),
+		    new HashSet<AppointmentType>(service.getAppointmentBlock(1).getTypes()));
+		appointmentBlock = service.saveAppointmentBlock(appointmentBlock);
+
 		TimeSlot timeSlot = new TimeSlot();
-		timeSlot.setStartDate(new Date());
-		timeSlot.setEndDate(new Date());
-		timeSlot.setAppointmentBlock(service.getAppointmentBlock(1));
+		timeSlot.setStartDate(started);
+		timeSlot.setEndDate(OpenmrsUtil.getLastMomentOfDay(started));
+		timeSlot.setAppointmentBlock(appointmentBlock);
 		service.saveTimeSlot(timeSlot);
 		AppointmentType appointmentType = service.getAppointmentType(1);
 		Appointment appointment = new Appointment(timeSlot, new Visit(1),

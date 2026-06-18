@@ -16,6 +16,7 @@
 		</id>
 		
 		<discriminator column="appointment_block_id" insert="false" />
+		<version name="version" column="version" type="integer" unsaved-value="undefined" />
 		<property name="startDate" type="java.util.Date" column="start_date" not-null="true" length="19" />
 		<property name="endDate" type="java.util.Date" column="end_date" not-null="true" length="19" />
 		<many-to-one name="provider" column="provider_id" class="org.openmrs.Provider" />
