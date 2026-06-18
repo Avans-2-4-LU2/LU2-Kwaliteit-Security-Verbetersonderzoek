@@ -549,7 +549,35 @@
         </modifyColumn>
     </changeSet>
 
+    <changeSet id="20260618-1-appointmentscheduling-add-version-columns" author="MathijsH6">
+        <preConditions onFail="MARK_RAN">
+            <not><columnExists tableName="appointmentscheduling_appointment_block" columnName="version"/></not>
+        </preConditions>
+        <comment>
+            SR-04: add an optimistic-locking version column to appointment_block so concurrent updates to the
+            same block are detected and rejected (one of the two writers gets a StaleObjectStateException)
+            instead of silently overwriting each other's changes.
+        </comment>
+        <addColumn tableName="appointmentscheduling_appointment_block">
+            <column name="version" type="int" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
 
-
+    <changeSet id="20260618-2-appointmentscheduling-add-version-columns" author="MathijsH6">
+        <preConditions onFail="MARK_RAN">
+            <not><columnExists tableName="appointmentscheduling_time_slot" columnName="version"/></not>
+        </preConditions>
+        <comment>
+            SR-04: add an optimistic-locking version column to time_slot for the same reason as
+            appointment_block above.
+        </comment>
+        <addColumn tableName="appointmentscheduling_time_slot">
+            <column name="version" type="int" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
 
 </databaseChangeLog>

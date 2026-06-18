@@ -1,5 +1,6 @@
 package org.openmrs.module.appointmentscheduling.validator;
 
+import org.apache.commons.lang.time.DateUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.openmrs.annotation.Handler;
@@ -10,6 +11,8 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
 import org.springframework.validation.Validator;
 
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Set;
 
 /**
@@ -52,6 +55,18 @@ public class ProviderScheduleValidator implements Validator {
             ValidationUtils.rejectIfEmpty(errors, "startTime", "appointmentscheduling.ProviderSchedule.emptyStartTime");
             ValidationUtils.rejectIfEmpty(errors, "endTime", "appointmentscheduling.ProviderSchedule.emptyEndTime");
             ValidationUtils.rejectIfEmpty(errors, "location", "appointmentscheduling.ProviderSchedule.emptyLocation");
+
+            if (providerSchedule.getStartDate() != null && providerSchedule.getEndDate() != null) {
+                if (!providerSchedule.getStartDate().before(providerSchedule.getEndDate())) {
+                    errors.rejectValue("endDate", "appointmentscheduling.ProviderSchedule.error.InvalidDateInterval");
+                }
+                // only enforced on creation: editing an already-saved (and possibly now historical) schedule must remain possible
+                // compared at day granularity (not the exact instant) so a schedule starting "today" is never flagged due to a few milliseconds of test/processing time
+                if (providerSchedule.getProviderScheduleId() == null
+                        && providerSchedule.getStartDate().before(DateUtils.truncate(new Date(), Calendar.DATE))) {
+                    errors.rejectValue("startDate", "appointmentscheduling.ProviderSchedule.error.dateCannotBeInThePast");
+                }
+            }
 
             Set<AppointmentType> types = providerSchedule.getTypes();
             if (types == null) {
