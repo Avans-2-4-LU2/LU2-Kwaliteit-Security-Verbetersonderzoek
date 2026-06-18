@@ -21,17 +21,19 @@ public class AppointmentBlockWithTimeSlotResource1_9ControllerTest extends Appoi
 	@Test
 	public void shouldCreateNewAppointmentBlockWithTimeSlot() throws Exception {
 		
-		String json = "{ \"startDate\":\"2005-03-01T00:00:00.000-0500\", \"endDate\":\"2005-03-01T11:00:00.000-0500\", "
+		// a brand new appointment block (and its auto-created time slot) can no longer be dated in the past, so
+		// this uses a far-future date rather than the historical 2005 date this test originally used
+		String json = "{ \"startDate\":\"2099-03-01T00:00:00.000-0500\", \"endDate\":\"2099-03-01T11:00:00.000-0500\", "
 		        + "\"provider\":\"c0c54sd0-8e59-401d-8a4a-976a0b183599\", \"location\":\"9356400c-a5a2-4532-8f2b-2361b3446eb8\", "
 		        + "\"types\": [ \"c0c579b0-8e59-401d-8a4a-976a0b183519\" ]" + "}";
-		
+
 		MockHttpServletRequest req = request(RequestMethod.POST, getURI());
 		req.setContent(json.getBytes());
-		
+
 		Object appt = deserialize(handle(req));
 		Assert.assertNotNull(PropertyUtils.getProperty(appt, "uuid"));
-		assertThat((String) PropertyUtils.getProperty(appt, "startDate"), sameDatetime("2005-03-01T00:00:00.000-0500"));
-		assertThat((String) PropertyUtils.getProperty(appt, "endDate"), sameDatetime("2005-03-01T11:00:00.000-0500"));
+		assertThat((String) PropertyUtils.getProperty(appt, "startDate"), sameDatetime("2099-03-01T00:00:00.000-0500"));
+		assertThat((String) PropertyUtils.getProperty(appt, "endDate"), sameDatetime("2099-03-01T11:00:00.000-0500"));
 		Assert.assertEquals("c0c54sd0-8e59-401d-8a4a-976a0b183599",
 		    PropertyUtils.getProperty(PropertyUtils.getProperty(appt, "provider"), "uuid"));
 		Assert.assertEquals("9356400c-a5a2-4532-8f2b-2361b3446eb8",

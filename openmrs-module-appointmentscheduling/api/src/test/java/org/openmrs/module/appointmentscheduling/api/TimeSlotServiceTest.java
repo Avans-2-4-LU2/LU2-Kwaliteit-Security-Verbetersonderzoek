@@ -16,6 +16,7 @@ package org.openmrs.module.appointmentscheduling.api;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 
 import junit.framework.Assert;
@@ -32,6 +33,7 @@ import org.openmrs.module.appointmentscheduling.AppointmentType;
 import org.openmrs.module.appointmentscheduling.TimeSlot;
 import org.openmrs.test.BaseModuleContextSensitiveTest;
 import org.openmrs.test.Verifies;
+import org.openmrs.util.OpenmrsUtil;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -81,12 +83,20 @@ public class TimeSlotServiceTest extends BaseModuleContextSensitiveTest {
 	@Test
 	@Verifies(value = "should save new time slot", method = "saveTimeSlot(TimeSlot)")
 	public void saveTimeSlot_shouldSaveNewTimeSlot() {
-		
-		AppointmentBlock appointmentBlock = service.getAppointmentBlock(1);
-		TimeSlot timeSlot = new TimeSlot(appointmentBlock, new Date(), new Date());
+
+		// a brand new time slot must fall within its appointment block and not be dated in the past, so (unlike the
+		// other fixture-based tests in this class) it needs a present-day parent block rather than the dataset's
+		// historical appointment block #1 (2005-01-01), which a *new* time slot can no longer legally attach to.
+		Date started = new Date();
+		AppointmentBlock appointmentBlock = new AppointmentBlock(started, OpenmrsUtil.getLastMomentOfDay(started),
+		    Context.getProviderService().getProvider(1), new Location(1),
+		    new HashSet<AppointmentType>(service.getAppointmentBlock(1).getTypes()));
+		appointmentBlock = service.saveAppointmentBlock(appointmentBlock);
+
+		TimeSlot timeSlot = new TimeSlot(appointmentBlock, started, OpenmrsUtil.getLastMomentOfDay(started));
 		timeSlot = service.saveTimeSlot(timeSlot);
 		List<TimeSlot> timeSlots = service.getAllTimeSlots();
-		
+
 		assertNotNull(timeSlot);
 		assertEquals(TOTAL_TIME_SLOTS + 1, timeSlots.size());
 	}

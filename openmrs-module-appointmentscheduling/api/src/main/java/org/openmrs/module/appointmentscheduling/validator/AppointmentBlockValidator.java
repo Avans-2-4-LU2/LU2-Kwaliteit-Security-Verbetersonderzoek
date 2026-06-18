@@ -13,6 +13,7 @@
  */
 package org.openmrs.module.appointmentscheduling.validator;
 
+import org.apache.commons.lang.time.DateUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.openmrs.annotation.Handler;
@@ -26,6 +27,8 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
 import org.springframework.validation.Validator;
 
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Set;
 
 /**
@@ -54,8 +57,9 @@ public class AppointmentBlockValidator implements Validator {
 	 *      org.springframework.validation.Errors)
 	 * <strong>Should</strong> pass validation if all required fields have proper values
 	 * <strong>Should</strong> fail validation if start date is not before end date
+	 * <strong>Should</strong> fail validation if a new appointment block starts in the past
 	 */
-	
+
 	public void validate(Object obj, Errors errors) {
 		AppointmentBlock appointmentBlock = (AppointmentBlock) obj;
 		if (appointmentBlock == null) {
@@ -64,6 +68,18 @@ public class AppointmentBlockValidator implements Validator {
 			ValidationUtils.rejectIfEmpty(errors, "startDate", "appointmentscheduling.AppointmentBlock.emptyStartDate");
 			ValidationUtils.rejectIfEmpty(errors, "endDate", "appointmentscheduling.AppointmentBlock.emptyEndDate");
 			ValidationUtils.rejectIfEmpty(errors, "location", "appointmentscheduling.AppointmentBlock.emptyLocation");
+
+			if (appointmentBlock.getStartDate() != null && appointmentBlock.getEndDate() != null) {
+				if (!appointmentBlock.getStartDate().before(appointmentBlock.getEndDate())) {
+					errors.rejectValue("endDate", "appointmentscheduling.AppointmentBlock.error.InvalidDateInterval");
+				}
+				// only enforced on creation: editing/voiding an already-saved (and possibly now historical) block must remain possible
+				// compared at day granularity (not the exact instant) so a block starting "today" is never flagged due to a few milliseconds of test/processing time
+				if (appointmentBlock.getAppointmentBlockId() == null
+				        && appointmentBlock.getStartDate().before(DateUtils.truncate(new Date(), Calendar.DATE))) {
+					errors.rejectValue("startDate", "appointmentscheduling.AppointmentBlock.error.dateCannotBeInThePast");
+				}
+			}
 
             if (Context.getService(AppointmentService.class).getOverlappingAppointmentBlocks(appointmentBlock).size() > 0) {
 				errors.rejectValue("provider", "appointmentscheduling.AppointmentBlock.error.appointmentBlockOverlap");

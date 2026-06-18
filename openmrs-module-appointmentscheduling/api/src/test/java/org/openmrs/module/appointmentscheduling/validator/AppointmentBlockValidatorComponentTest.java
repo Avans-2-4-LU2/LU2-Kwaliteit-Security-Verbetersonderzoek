@@ -30,40 +30,47 @@ public class AppointmentBlockValidatorComponentTest extends BaseModuleContextSen
 	
 	@Test
 	public void shouldNotAllowCreationOfOverlappingAppointmentBlock() {
-		
+
 		AppointmentBlock appointmentBlock = new AppointmentBlock();
 		// this overlaps with appointment block #1 in the test dataset
 		appointmentBlock.setStartDate(new DateTime(2005, 1, 1, 0, 0).toDate());
 		appointmentBlock.setEndDate(new DateTime(2005, 1, 2, 0, 0).toDate());
-		
+
 		appointmentBlock.setProvider(Context.getProviderService().getProvider(1));
 		appointmentBlock.setLocation(Context.getLocationService().getLocation(1));
 		appointmentBlock.setTypes(new HashSet(Arrays.asList(Context.getService(AppointmentService.class).getAppointmentType(
 		    1))));
-		
+
 		errors = new BindException(appointmentBlock, "test");
 		appointmentBlockValidator.validate(appointmentBlock, errors);
-		
-		Assert.assertEquals(1, errors.getFieldErrorCount());
+
+		// this submission is invalid for two independent reasons: it overlaps appointment block #1, and (being
+		// a brand new block dated 2005) it also fails the "no past dates" rule. Both are asserted explicitly
+		// rather than just counting errors, so this test still demonstrates the overlap check specifically.
+		Assert.assertEquals(2, errors.getFieldErrorCount());
 		Assert.assertEquals("appointmentscheduling.AppointmentBlock.error.appointmentBlockOverlap",
 		    errors.getFieldError("provider").getCode());
+		Assert.assertEquals("appointmentscheduling.AppointmentBlock.error.dateCannotBeInThePast",
+		    errors.getFieldError("startDate").getCode());
 	}
-	
+
 	@Test
 	public void shouldAllowCreationOfNonOverlappingAppointmentBlock() {
-		
+
 		AppointmentBlock appointmentBlock = new AppointmentBlock();
-		appointmentBlock.setStartDate(new DateTime(2007, 1, 1, 0, 0).toDate());
-		appointmentBlock.setEndDate(new DateTime(2007, 1, 2, 0, 0).toDate());
-		
+		// a future date, so this new block trips neither the overlap check (no provider #1 blocks exist this far out)
+		// nor the "no past dates" rule
+		appointmentBlock.setStartDate(new DateTime().plusYears(1).toDate());
+		appointmentBlock.setEndDate(new DateTime().plusYears(1).plusDays(1).toDate());
+
 		appointmentBlock.setProvider(Context.getProviderService().getProvider(1));
 		appointmentBlock.setLocation(Context.getLocationService().getLocation(1));
 		appointmentBlock.setTypes(new HashSet(Arrays.asList(Context.getService(AppointmentService.class).getAppointmentType(
 		    1))));
-		
+
 		errors = new BindException(appointmentBlock, "test");
 		appointmentBlockValidator.validate(appointmentBlock, errors);
-		
+
 		Assert.assertEquals(0, errors.getFieldErrorCount());
 	}
 
