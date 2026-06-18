@@ -222,6 +222,36 @@ public class ConfidentialAppointmentAccessControlTest extends BaseModuleContextS
     }
 
     /**
+     * getLastAppointment(Patient) reads the DAO directly and was missed by the original SR-03 filter
+     * pass - it is a real entry point (patient-dashboard extension/controller, DWR) that can both
+     * display and, via the dashboard controller, modify the returned appointment. Patient 1's most
+     * recent appointment (id 7) is of the confidential type, so this proves the gap is closed.
+     */
+    @Test
+    @DirtiesContext
+    public void getLastAppointment_filtersConfidentialAppointmentForUnauthorizedUser() throws Exception {
+        AppointmentService service = becomeAttacker();
+        try {
+            Context.addProxyPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS);
+            Appointment confidential = service.getAppointment(CONFIDENTIAL_APPOINTMENT_ID);
+            assertNotNull("Sanity: confidential appointment fixture should exist", confidential);
+            Patient patient = confidential.getPatient();
+            assertNotNull("Sanity: confidential appointment should have a patient", patient);
+
+            Appointment visible = service.getLastAppointment(patient);
+            assertNotNull("Authorized user should still see the patient's last appointment", visible);
+            assertTrue("Sanity: patient 1's last appointment is of a confidential type",
+                    visible.getAppointmentType().isConfidential());
+            Context.removeProxyPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS);
+
+            assertNull("getLastAppointment must not return a confidential appointment to a user without the "
+                    + "confidentiality privilege", service.getLastAppointment(patient));
+        } finally {
+            resetAttacker();
+        }
+    }
+
+    /**
      * Cross-entry-point / cross-component consistency (tasks 4 and 5): the same confidential appointment
      * is filtered for an unauthorized user across every user-facing read path (single, list, by-patient),
      * and visible to an authorized user. The REST resources and UI controllers read through these same

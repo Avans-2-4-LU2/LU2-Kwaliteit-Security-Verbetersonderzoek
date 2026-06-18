@@ -656,7 +656,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
     @Override
 	@Transactional(readOnly = true)
 	public Appointment getLastAppointment(Patient patient) {
-		return getAppointmentDAO().getLastAppointment(patient);
+		return filterConfidentialAppointmentIfNotAuthorized(getAppointmentDAO().getLastAppointment(patient));
 	}
 
 	@Override

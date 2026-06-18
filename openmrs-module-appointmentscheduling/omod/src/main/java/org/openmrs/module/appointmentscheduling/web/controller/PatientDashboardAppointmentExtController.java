@@ -24,25 +24,34 @@ public class PatientDashboardAppointmentExtController {
 		if (action.equals("endConsult")) {
 			Patient patient = Context.getPatientService().getPatient(patientId);
 			Appointment appointment = Context.getService(AppointmentService.class).getLastAppointment(patient);
-			Visit visit = appointment.getVisit();
-			
-			//Check if was ended already
-			if (visit.getStopDatetime() == null) {
-				Context.getVisitService().endVisit(visit, new Date());
-				Context.getVisitService().saveVisit(visit);
+
+			// appointment is null when it does not exist, or when its type is confidential and the
+			// current user lacks the confidentiality privilege - either way there is nothing to end.
+			if (appointment != null) {
+				Visit visit = appointment.getVisit();
+
+				//Check if was ended already
+				if (visit != null && visit.getStopDatetime() == null) {
+					Context.getVisitService().endVisit(visit, new Date());
+					Context.getVisitService().saveVisit(visit);
+				}
+
+				appointment.setStatus(AppointmentStatus.COMPLETED);
+				Context.getService(AppointmentService.class).saveAppointment(appointment);
 			}
-			
-			appointment.setStatus(AppointmentStatus.COMPLETED);
-			Context.getService(AppointmentService.class).saveAppointment(appointment);
-			
+
 			return "redirect:/module/appointmentscheduling/appointmentList.list";
 		} else if (action.equals("startConsult")) {
 			Patient patient = Context.getPatientService().getPatient(patientId);
 			Appointment appointment = Context.getService(AppointmentService.class).getLastAppointment(patient);
-			
-			appointment.setStatus(AppointmentStatus.INCONSULTATION);
-			Context.getService(AppointmentService.class).saveAppointment(appointment);
-			
+
+			// appointment is null when it does not exist, or when its type is confidential and the
+			// current user lacks the confidentiality privilege - either way there is nothing to start.
+			if (appointment != null) {
+				appointment.setStatus(AppointmentStatus.INCONSULTATION);
+				Context.getService(AppointmentService.class).saveAppointment(appointment);
+			}
+
 			return "redirect:/patientDashboard.form?patientId=" + patientId;
 		}
 		
