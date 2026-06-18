@@ -125,7 +125,7 @@ AppointmentServiceImpl
 
 **Explanation**
 
-Although `AppointmentServiceImpl` achieves high line and branch coverage, the confidentiality vulnerability identified in issue #36 remains present. The existing `ConfidentialAppointmentAccessControlTest` demonstrates the information disclosure vulnerability rather than verifying that access is denied. Therefore the dominant CIA risk remains unmitigated despite high coverage. 
+Although `AppointmentServiceImpl` achieves high line and branch coverage, a known confidentiality vulnerability remains present. The existing `ConfidentialAppointmentAccessControlTest` demonstrates the information disclosure vulnerability rather than verifying that access is denied. Therefore the dominant CIA risk remains unmitigated despite high coverage.
 
 #### Confidential Appointment Types
 
@@ -145,7 +145,7 @@ PatientToAppointmentDataEvaluator / PersonToAppointmentDataEvaluator
 
 **Explanation**
 
-The two reporting evaluators that actually enforce the confidentiality privilege are well tested, and a passing test (`evaluate_shouldReturnPatientDataForNonConfidentialAppointments`) proves confidential appointments are correctly filtered out of report exports. The same privilege check is never applied in `AppointmentServiceImpl` (see above), so the same appointment is hidden in reports but fully exposed through the core service and REST API — high coverage on both ends hides an inconsistency between them. Mapped to SR-03: extending the privilege check to the core/REST paths is required before this can move to "Adequate."
+The two reporting evaluators that actually enforce the confidentiality privilege are well tested, and a passing test (`evaluate_shouldReturnPatientDataForNonConfidentialAppointments`) proves confidential appointments are correctly filtered out of report exports. The same privilege check is never applied in `AppointmentServiceImpl` (see above), so the same appointment is hidden in reports but fully exposed through the core service and REST API — high coverage on both ends hides an inconsistency between them.
 
 #### Appointment Requests and Notes
 
@@ -160,7 +160,7 @@ AppointmentRequestValidator
 
 **Explanation**
 
-The missed branch is a defensive `if (obj == null)` check that tests never trigger — not a security control. The real gap is elsewhere: no test, and no production code, masks the free-text `reason` / `cancel_reason` fields or keeps them out of logs for users without the right privilege. SR-02 has not been implemented yet, so there is nothing to test.
+The missed branch is a defensive `if (obj == null)` check that tests never trigger — not a security control. The real gap is elsewhere: no test, and no production code, masks the free-text `reason` / `cancel_reason` fields or keeps them out of logs for users without the right privilege. That protection has not been implemented yet, so there is nothing to test.
 
 #### Appointment Blocks and Time Slots
 
@@ -180,7 +180,7 @@ TimeSlotValidator
 
 **Explanation**
 
-The core integrity rule — rejecting overlapping/double-booked appointment blocks — is explicitly created and asserted in `shouldNotAllowCreationOfOverlappingAppointmentBlock`. `TimeSlotValidator`'s lower branch score is the same untested null-check pattern seen above, not a missed integrity rule. The one real gap is concurrency: no test verifies that parallel writes can't corrupt schedule state (called for in SR-04).
+The core integrity rule — rejecting overlapping/double-booked appointment blocks — is explicitly created and asserted in `shouldNotAllowCreationOfOverlappingAppointmentBlock`. `TimeSlotValidator`'s lower branch score is the same untested null-check pattern seen above, not a missed integrity rule. The one real gap is concurrency: no test verifies that parallel writes can't corrupt schedule state.
 
 #### Provider Schedules
 
@@ -215,7 +215,7 @@ AppointmentStatusHistoryValidator
 
 **Explanation**
 
-Save, retrieval, and status-change transitions are tested. No test verifies that a historical record cannot be altered after creation — that tamper-resistance guarantee (SR-05) is unverified.
+Save, retrieval, and status-change transitions are tested. No test verifies that a historical record cannot be altered after creation — that tamper-resistance guarantee is unverified.
 
 #### Audit Metadata (creator, changed-by, void reasons)
 
@@ -243,7 +243,7 @@ AppointmentServiceImpl (41 @Authorized checks)
 
 **Explanation**
 
-Every privilege-gated method is exercised under an authorized user, but no test exercises the *denied* path for any of the 41 `@Authorized` checks — except the confidentiality privilege, where the existing test proves the opposite of what's intended (see "Appointment Records" above). Adding denied-access tests for the remaining checks is in scope of SR-01.
+Every privilege-gated method is exercised under an authorized user, but no test exercises the *denied* path for any of the 41 `@Authorized` checks — except the confidentiality privilege, where the existing test proves the opposite of what's intended (see "Appointment Records" above).
 
 **Reading the matrix:** of the four risks scored ≥15, only schedule integrity (appointment blocks/time slots) is adequately tested. All three confidentiality risks trace back to the same root cause — `PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS` is enforced in the reporting evaluators but not in the core service, REST, or web layers — and this is an open, reproducible finding (`pentest-report.md` F-01, issue #36), not a blind spot in this analysis.
 
