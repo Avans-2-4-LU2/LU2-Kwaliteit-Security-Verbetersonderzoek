@@ -3,6 +3,7 @@ package org.openmrs.module.appointmentscheduling.security;
 import org.junit.Before;
 import org.junit.Test;
 import org.openmrs.Patient;
+import org.openmrs.Visit;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.appointmentscheduling.Appointment;
 import org.openmrs.module.appointmentscheduling.AppointmentSchedulingConstants;
@@ -43,6 +44,7 @@ import static junit.framework.Assert.assertTrue;
 public class ConfidentialAppointmentAccessControlTest extends BaseModuleContextSensitiveTest {
 
     private static final int CONFIDENTIAL_APPOINTMENT_ID = 1;
+    private static final String CONFIDENTIAL_APPOINTMENT_UUID = "c0c579b0-8e59-401d-8a4a-976a0b183601";
 
     @Before
     public void setup() throws Exception {
@@ -123,6 +125,97 @@ public class ConfidentialAppointmentAccessControlTest extends BaseModuleContextS
             assertTrue("Authorized user should see confidential appointments in the list",
                     containsConfidential(service.getAllAppointments()));
             Context.removeProxyPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS);
+        } finally {
+            resetAttacker();
+        }
+    }
+
+    @Test
+    @DirtiesContext
+    public void getAppointmentByUuid_filtersConfidentialAppointmentForUnauthorizedUser() throws Exception {
+        AppointmentService service = becomeAttacker();
+        try {
+            Context.addProxyPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS);
+            Appointment visible = service.getAppointmentByUuid(CONFIDENTIAL_APPOINTMENT_UUID);
+            assertNotNull("Authorized user should still see the confidential appointment by UUID", visible);
+            assertTrue("Sanity: appointment 1 is of a confidential type",
+                    visible.getAppointmentType().isConfidential());
+            Context.removeProxyPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS);
+
+            assertNull("Confidential appointment must not be returned by UUID to a user without the "
+                    + "confidentiality privilege",
+                    service.getAppointmentByUuid(CONFIDENTIAL_APPOINTMENT_UUID));
+        } finally {
+            resetAttacker();
+        }
+    }
+
+    @Test
+    @DirtiesContext
+    public void getAppointmentByVisit_filtersConfidentialAppointmentForUnauthorizedUser() throws Exception {
+        AppointmentService service = becomeAttacker();
+        try {
+            Context.addProxyPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS);
+            Appointment visible = service.getAppointmentByVisit(new Visit(1));
+            assertNotNull("Authorized user should still see the confidential appointment", visible);
+            assertTrue("Sanity: appointment 1 is of a confidential type",
+                    visible.getAppointmentType().isConfidential());
+            Context.removeProxyPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS);
+
+            assertNull("Confidential appointment must not be returned by visit to a user without the "
+                    + "confidentiality privilege", service.getAppointmentByVisit(new Visit(1)));
+        } finally {
+            resetAttacker();
+        }
+    }
+
+    @Test
+    @DirtiesContext
+    public void getAppointmentsByConstraints_omitsConfidentialAppointmentsForUnauthorizedUser() throws Exception {
+        AppointmentService service = becomeAttacker();
+        try {
+            Context.addProxyPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS);
+            Appointment visible = service.getAppointment(CONFIDENTIAL_APPOINTMENT_ID);
+            assertNotNull("Authorized user should still see the confidential appointment", visible);
+            assertTrue("Sanity: appointment 1 is of a confidential type",
+                    visible.getAppointmentType().isConfidential());
+
+            List<Appointment> authorized = service.getAppointmentsByConstraints(null, null, null, null,
+                    visible.getAppointmentType(), null);
+            assertTrue("Authorized user should see at least one confidential appointment in the constraints result",
+                    containsConfidential(authorized));
+
+            Context.removeProxyPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS);
+            List<Appointment> unauthorized = service.getAppointmentsByConstraints(null, null, null, null,
+                    visible.getAppointmentType(), null);
+            assertFalse("Confidential appointments must not be returned by constraints to a user without the "
+                    + "confidentiality privilege", containsConfidential(unauthorized));
+        } finally {
+            resetAttacker();
+        }
+    }
+
+    @Test
+    @DirtiesContext
+    public void getScheduledAppointmentsForPatient_omitsConfidentialAppointmentsForUnauthorizedUser() throws Exception {
+        AppointmentService service = becomeAttacker();
+        try {
+            Context.addProxyPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS);
+            Appointment visible = service.getAppointment(CONFIDENTIAL_APPOINTMENT_ID);
+            assertNotNull("Authorized user should still see the confidential appointment", visible);
+            Patient patient = visible.getPatient();
+            assertNotNull("Sanity: confidential appointment should have a patient", patient);
+            assertTrue("Sanity: appointment 1 is of a confidential type",
+                    visible.getAppointmentType().isConfidential());
+
+            List<Appointment> authorized = service.getScheduledAppointmentsForPatient(patient);
+            assertTrue("Authorized user should see the confidential appointment in the scheduled list",
+                    containsConfidential(authorized));
+
+            Context.removeProxyPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS);
+            List<Appointment> unauthorized = service.getScheduledAppointmentsForPatient(patient);
+            assertFalse("Confidential appointments must not be returned in the scheduled list to a user without the "
+                    + "confidentiality privilege", containsConfidential(unauthorized));
         } finally {
             resetAttacker();
         }
