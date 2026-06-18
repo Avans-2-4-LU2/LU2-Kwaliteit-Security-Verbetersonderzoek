@@ -14,38 +14,30 @@ import java.util.List;
 
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
 
 /**
- * Penetration-test demonstration for issue #36 (test case PT-01).
+ * Penetration-test re-test for the confidential-appointment access-control finding
+ * (F-01, issue #36; mitigation issue #71 / SR-03).
  *
- * FINDING - broken access control (CWE-285 / CWE-639):
- * The confidential-appointment privilege
+ * FINDING (sprint 2): the confidentiality privilege
  * ({@link AppointmentSchedulingConstants#PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS},
- * "Task: appointmentschedulingui.viewConfidential") is only enforced in the
- * reporting data evaluators (PatientToAppointmentDataEvaluator /
- * PersonToAppointmentDataEvaluator). The core AppointmentService retrieval
- * methods are gated only by "View Appointments" and do NOT filter confidential
- * appointments. A user who may view appointments but lacks the confidentiality
- * privilege can therefore read confidential appointment data.
+ * "Task: appointmentschedulingui.viewConfidential") was only enforced in the reporting data evaluators
+ * (PatientToAppointmentDataEvaluator / PersonToAppointmentDataEvaluator). The core AppointmentService
+ * retrieval methods were gated only by "View Appointments" and returned confidential appointments to any
+ * user with that privilege.
  *
- * Attacker: the standard OpenMRS test user "butch", who does NOT hold the
- * confidentiality privilege. (The same user the reporting test
- * PatientToAppointmentDataEvaluatorTest uses to prove that the reporting path
- * DOES filter confidential appointments - that test is the PT-02 control.) We
- * grant only "View Appointments" via a proxy privilege so this test isolates the
- * confidentiality gap rather than a generic authorization failure.
+ * MITIGATION (sprint 3): AppointmentServiceImpl now filters confidential appointments for users without
+ * the confidentiality privilege - single-record retrieval returns null, list retrieval omits them.
  *
- * Confidential test data (standardAppointmentTestDataset.xml):
- * appointment_type_id=1 ("Initial HIV Clinic Appointment", confidential=1);
- * appointment id 1 is of that type.
+ * This test asserts the SECURE behaviour: a low-privilege attacker ("butch") cannot read confidential
+ * appointments, while a user granted the confidentiality privilege still can (proving the fix does not
+ * over-filter). Before the mitigation these assertions fail (the appointment leaks); after it they pass -
+ * the red/green proof that the risk is reduced.
  *
- * NOTE ON SPRINT SCOPE (#36 is sprint 2 = demonstrate + document):
- * This test asserts the CURRENT, insecure behaviour so that it passes and serves
- * as documented evidence of the leak. In sprint 3, after the missing
- * confidentiality check is added to the core retrieval paths, these expectations
- * must be inverted to assert that the confidential appointment (id 1) is filtered
- * out - the red/green re-test that proves the risk is reduced.
+ * Confidential test data (standardAppointmentTestDataset.xml): appointment_type_id=1
+ * ("Initial HIV Clinic Appointment", confidential=1); appointment id 1 is of that type.
  */
 public class ConfidentialAppointmentAccessControlTest extends BaseModuleContextSensitiveTest {
 
@@ -63,12 +55,10 @@ public class ConfidentialAppointmentAccessControlTest extends BaseModuleContextS
     private AppointmentService becomeAttacker() {
         Context.becomeUser("butch");
 
-        // Precondition: the attacker must NOT hold the confidentiality privilege,
-        // otherwise this would not demonstrate the gap.
+        // Precondition: the attacker must NOT hold the confidentiality privilege.
         assertFalse("Test precondition: attacker must lack the confidentiality privilege",
                 Context.hasPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS));
 
-        // The attacker is legitimately allowed to view appointments.
         Context.addProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENTS);
         Context.addProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENT_TYPES);
 
@@ -80,51 +70,58 @@ public class ConfidentialAppointmentAccessControlTest extends BaseModuleContextS
         Context.removeProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENT_TYPES);
     }
 
+    private boolean containsConfidential(List<Appointment> appointments) {
+        for (Appointment a : appointments) {
+            if (a.getAppointmentType() != null && a.getAppointmentType().isConfidential()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
-     * PT-01a: single-record retrieval leaks a confidential appointment.
+     * PT-01a (re-test): single-record retrieval filters the confidential appointment for a user without
+     * the privilege, but still returns it once the privilege is granted (no over-filtering).
      */
     @Test
     @DirtiesContext
-    public void getAppointment_currentlyLeaksConfidentialAppointment_FINDING() throws Exception {
+    public void getAppointment_filtersConfidentialAppointmentForUnauthorizedUser() throws Exception {
         AppointmentService service = becomeAttacker();
         try {
-            Appointment confidential = service.getAppointment(CONFIDENTIAL_APPOINTMENT_ID);
+            // MITIGATED: confidential appointment is no longer returned without the privilege.
+            assertNull("Confidential appointment must not be returned to a user without the "
+                    + "confidentiality privilege", service.getAppointment(CONFIDENTIAL_APPOINTMENT_ID));
 
-            assertTrue("Sanity: appointment 1 should be of a confidential type",
-                    confidential != null && confidential.getAppointmentType().isConfidential());
-
-            // FINDING (PT-01): the confidential appointment is returned in full to a
-            // user without the confidentiality privilege. A secure implementation
-            // would deny or filter this.
-            assertNotNull("FINDING (PT-01): confidential appointment leaked to a user "
-                    + "without the confidentiality privilege", confidential);
+            // No over-filtering: with the privilege the appointment is visible and is confidential.
+            Context.addProxyPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS);
+            Appointment visible = service.getAppointment(CONFIDENTIAL_APPOINTMENT_ID);
+            assertNotNull("Authorized user should still see the confidential appointment", visible);
+            assertTrue("Sanity: appointment 1 is of a confidential type",
+                    visible.getAppointmentType().isConfidential());
+            Context.removeProxyPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS);
         } finally {
             resetAttacker();
         }
     }
 
     /**
-     * PT-01b: list retrieval leaks confidential appointments.
+     * PT-01b (re-test): list retrieval omits confidential appointments for a user without the privilege,
+     * but includes them once the privilege is granted (no over-filtering).
      */
     @Test
     @DirtiesContext
-    public void getAllAppointments_currentlyLeaksConfidentialAppointments_FINDING() throws Exception {
+    public void getAllAppointments_omitsConfidentialAppointmentsForUnauthorizedUser() throws Exception {
         AppointmentService service = becomeAttacker();
         try {
-            List<Appointment> appointments = service.getAllAppointments();
+            // MITIGATED: no confidential appointment appears in the list without the privilege.
+            assertFalse("List retrieval must not expose confidential appointments to a user without the "
+                    + "confidentiality privilege", containsConfidential(service.getAllAppointments()));
 
-            boolean confidentialLeaked = false;
-            for (Appointment a : appointments) {
-                if (a.getAppointmentType() != null && a.getAppointmentType().isConfidential()) {
-                    confidentialLeaked = true;
-                    break;
-                }
-            }
-
-            // FINDING (PT-01): the list retrieval path also returns confidential
-            // appointments to a user without the confidentiality privilege.
-            assertTrue("FINDING (PT-01): getAllAppointments leaked confidential appointment(s) "
-                    + "to a user without the confidentiality privilege", confidentialLeaked);
+            // No over-filtering: with the privilege, confidential appointments are present.
+            Context.addProxyPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS);
+            assertTrue("Authorized user should see confidential appointments in the list",
+                    containsConfidential(service.getAllAppointments()));
+            Context.removeProxyPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS);
         } finally {
             resetAttacker();
         }

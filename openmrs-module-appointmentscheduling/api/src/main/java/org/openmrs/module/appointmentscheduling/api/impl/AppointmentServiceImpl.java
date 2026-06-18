@@ -31,6 +31,7 @@ import org.openmrs.module.appointmentscheduling.Appointment.AppointmentStatus;
 import org.openmrs.module.appointmentscheduling.AppointmentBlock;
 import org.openmrs.module.appointmentscheduling.AppointmentDailyCount;
 import org.openmrs.module.appointmentscheduling.AppointmentRequest;
+import org.openmrs.module.appointmentscheduling.AppointmentSchedulingConstants;
 import org.openmrs.module.appointmentscheduling.AppointmentStatusHistory;
 import org.openmrs.module.appointmentscheduling.AppointmentType;
 import org.openmrs.module.appointmentscheduling.ProviderSchedule;
@@ -372,25 +373,25 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	@Override
 	@Transactional(readOnly = true)
 	public List<Appointment> getAllAppointments() {
-		return getAppointmentDAO().getAll();
+		return removeConfidentialAppointmentsIfNotAuthorized(getAppointmentDAO().getAll());
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public List<Appointment> getAllAppointments(boolean includeVoided) {
-		return getAppointmentDAO().getAllData(includeVoided);
+		return removeConfidentialAppointmentsIfNotAuthorized(getAppointmentDAO().getAllData(includeVoided));
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public Appointment getAppointment(Integer appointmentId) {
-		return (Appointment) getAppointmentDAO().getById(appointmentId);
+		return filterConfidentialAppointmentIfNotAuthorized((Appointment) getAppointmentDAO().getById(appointmentId));
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public Appointment getAppointmentByUuid(String uuid) {
-		return (Appointment) getAppointmentDAO().getByUuid(uuid);
+		return filterConfidentialAppointmentIfNotAuthorized((Appointment) getAppointmentDAO().getByUuid(uuid));
 	}
 
 	@Override
@@ -423,13 +424,46 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	@Override
 	@Transactional(readOnly = true)
 	public List<Appointment> getAppointmentsOfPatient(Patient patient) {
-		return getAppointmentDAO().getAppointmentsByPatient(patient);
+		return removeConfidentialAppointmentsIfNotAuthorized(getAppointmentDAO().getAppointmentsByPatient(patient));
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public Appointment getAppointmentByVisit(Visit visit) {
-		return getAppointmentDAO().getAppointmentByVisit(visit);
+		return filterConfidentialAppointmentIfNotAuthorized(getAppointmentDAO().getAppointmentByVisit(visit));
+	}
+
+	// --- Confidential appointment access control (SR-03 / #71) ---
+	// Mirrors the privilege check used by the reporting data evaluators so confidential appointment
+	// details are not exposed through the core service (and therefore the REST API and UI that call it).
+	// A user without PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS does not see appointments whose
+	// type is marked confidential.
+
+	private boolean isConfidentialAppointment(Appointment appointment) {
+		return appointment != null && appointment.getAppointmentType() != null
+				&& appointment.getAppointmentType().isConfidential();
+	}
+
+	private Appointment filterConfidentialAppointmentIfNotAuthorized(Appointment appointment) {
+		if (isConfidentialAppointment(appointment)
+				&& !Context.hasPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS)) {
+			return null;
+		}
+		return appointment;
+	}
+
+	private List<Appointment> removeConfidentialAppointmentsIfNotAuthorized(List<Appointment> appointments) {
+		if (appointments == null
+				|| Context.hasPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS)) {
+			return appointments;
+		}
+		List<Appointment> filtered = new ArrayList<Appointment>();
+		for (Appointment appointment : appointments) {
+			if (!isConfidentialAppointment(appointment)) {
+				filtered.add(appointment);
+			}
+		}
+		return filtered;
 	}
 
 	// TimeSlot
@@ -681,7 +715,9 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 
         // generate the set of time slots to exclude that the specified patient already has an appointment for of the specified type
         if (excludeTimeSlotsWithPatient != null) {
-            for (Appointment appointment: getAppointmentsOfPatient(excludeTimeSlotsWithPatient)) {
+            // Use the DAO directly (not the confidentiality-filtered service method) so scheduling
+            // conflict detection still considers confidential appointments and cannot be bypassed.
+            for (Appointment appointment: getAppointmentDAO().getAppointmentsByPatient(excludeTimeSlotsWithPatient)) {
                 if (appointment.getAppointmentType() == appointmentType && appointment.getStatus().getType() != Appointment.AppointmentStatusType.CANCELLED) {
                     timeSlotsToExclude.add(appointment.getTimeSlot());
                 }
@@ -1428,6 +1464,6 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
                 + " dob=" + patient.getBirthdate()
                 + " identifier=" + (patient.getPatientIdentifier() != null ? patient.getPatientIdentifier().getIdentifier() : "none")
                 + " gender=" + patient.getGender());
-        return getAppointmentsForPatient(patient);
+        return getScheduledAppointmentsForPatient(patient);
     }
 }
