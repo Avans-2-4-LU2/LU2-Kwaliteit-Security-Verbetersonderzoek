@@ -104,7 +104,12 @@ public class AppointmentResource1_9 extends DataDelegatingCrudResource<Appointme
 
 	@Override
 	public Appointment getByUniqueId(String uuid) {
-		return Context.getService(AppointmentService.class).getAppointmentByUuid(uuid);
+		try {
+			return Context.getService(AppointmentService.class).getAppointmentByUuid(uuid);
+		} catch (org.openmrs.api.APIAuthenticationException e) {
+			// Confidential appointment - expose as 404 to avoid confirming existence to unprivileged users.
+			return null;
+		}
 	}
 
 	@Override

@@ -1,6 +1,8 @@
 package org.openmrs.module.appointmentscheduling.rest.controller;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -8,7 +10,10 @@ import org.apache.commons.beanutils.PropertyUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.openmrs.Location;
 import org.openmrs.api.context.Context;
+import org.openmrs.module.appointmentscheduling.AppointmentBlock;
+import org.openmrs.module.appointmentscheduling.AppointmentType;
 import org.openmrs.module.appointmentscheduling.TimeSlot;
 import org.openmrs.module.appointmentscheduling.api.AppointmentService;
 import org.openmrs.module.webservices.rest.SimpleObject;
@@ -16,6 +21,7 @@ import org.openmrs.module.webservices.rest.test.Util;
 import org.openmrs.module.webservices.rest.web.ConversionUtil;
 import org.openmrs.module.webservices.rest.web.RestConstants;
 import org.openmrs.module.webservices.rest.web.v1_0.controller.MainResourceControllerTest;
+import org.openmrs.util.OpenmrsUtil;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.bind.annotation.RequestMethod;
 
@@ -77,22 +83,38 @@ public class TimeSlotResource1_9ControllerTest extends MainResourceControllerTes
 	
 	@Test
 	public void shouldCreateNewTimeSlot() throws Exception {
-		
+
 		int originalCount = 8;
-		String json = "{ \"startDate\":\"2005-01-03T09:00:00.000-0500\", \"endDate\":\"2005-01-03T10:00:00.000-0500\", "
-		        + "\"appointmentBlock\": \"759799ab-c9a5-435e-b671-77773ada7499\" }";
-		
+
+		// a brand new time slot must fall within its appointment block and not be dated in the past, so it needs a
+		// present-day parent block rather than one of the dataset's historical (2005-2007) appointment blocks
+		Date started = new Date();
+		AppointmentBlock newBlock = new AppointmentBlock(started, OpenmrsUtil.getLastMomentOfDay(started),
+		    Context.getProviderService().getProvider(1), new Location(1),
+		    new HashSet<AppointmentType>(appointmentService.getAllAppointmentTypes()));
+		newBlock = appointmentService.saveAppointmentBlock(newBlock);
+
+		String startDateString = isoFormat(started);
+		String endDateString = isoFormat(OpenmrsUtil.getLastMomentOfDay(started));
+
+		String json = "{ \"startDate\":\"" + startDateString + "\", \"endDate\":\"" + endDateString + "\", "
+		        + "\"appointmentBlock\": \"" + newBlock.getUuid() + "\" }";
+
 		MockHttpServletRequest req = request(RequestMethod.POST, getURI());
 		req.setContent(json.getBytes());
-		
+
 		Object appt = deserialize(handle(req));
 		Assert.assertNotNull(PropertyUtils.getProperty(appt, "uuid"));
-		assertThat((String) PropertyUtils.getProperty(appt, "startDate"), sameDatetime("2005-01-03T09:00:00.000-0500"));
-		assertThat((String) PropertyUtils.getProperty(appt, "endDate"), sameDatetime("2005-01-03T10:00:00.000-0500"));
-		Assert.assertEquals("759799ab-c9a5-435e-b671-77773ada7499",
+		assertThat((String) PropertyUtils.getProperty(appt, "startDate"), sameDatetime(startDateString));
+		assertThat((String) PropertyUtils.getProperty(appt, "endDate"), sameDatetime(endDateString));
+		Assert.assertEquals(newBlock.getUuid(),
 		    PropertyUtils.getProperty(PropertyUtils.getProperty(appt, "appointmentBlock"), "uuid"));
 		Assert.assertEquals(originalCount + 1, appointmentService.getAllTimeSlots().size());
-		
+
+	}
+
+	private String isoFormat(Date date) {
+		return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(date);
 	}
 	
 	@Test

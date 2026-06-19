@@ -40,25 +40,53 @@ public class ProviderEditor extends PropertyEditorSupport {
 	 * <strong>Should</strong> set using id
 	 * <strong>Should</strong> set using uuid
 	 */
+	// @Override
+	// public void setAsText(String text) throws IllegalArgumentException {
+	// 	ProviderService ps = Context.getProviderService();
+	// 	if (StringUtils.hasText(text)) {
+	// 		try {
+	// 			setValue(ps.getProvider(Integer.valueOf(text)));
+	// 		}
+	// 		catch (Exception ex) {
+	// 			Provider p = ps.getProviderByUuid(text);
+	// 			setValue(p);
+	// 			if (p == null) {
+	// 				log.error("Error setting provider with id or uuid: " + text, ex);
+	// 				throw new IllegalArgumentException("Provider not found: " + ex.getMessage());
+	// 			}
+	// 		}
+	// 	} else {
+	// 		setValue(null);
+	// 	}
+	// }
 	@Override
-	public void setAsText(String text) throws IllegalArgumentException {
-		ProviderService ps = Context.getProviderService();
-		if (StringUtils.hasText(text)) {
-			try {
-				setValue(ps.getProvider(Integer.valueOf(text)));
-			}
-			catch (Exception ex) {
-				Provider p = ps.getProviderByUuid(text);
-				setValue(p);
-				if (p == null) {
-					log.error("Error setting provider with id or uuid: " + text, ex);
-					throw new IllegalArgumentException("Provider not found: " + ex.getMessage());
-				}
-			}
-		} else {
-			setValue(null);
-		}
-	}
+    public void setAsText(String text) throws IllegalArgumentException {
+        ProviderService ps = Context.getProviderService();
+        if (StringUtils.hasText(text)) {
+            try {
+                setValue(ps.getProvider(Integer.valueOf(text)));
+            }
+            catch (Exception ex) {
+                Provider p = ps.getProviderByUuid(text);
+                setValue(p);
+                if (p == null) {
+                    // 1. Sanitize the input to prevent CRLF Log Injection
+                    String sanitizedInput = text.replaceAll("[\r\n\t]", "_");
+                    
+                    // 2. Get the user context for the audit trail
+                    String username = Context.getAuthenticatedUser() != null ? Context.getAuthenticatedUser().getUsername() : "UNKNOWN";
+
+                    // 3. Log securely without dumping the raw stack trace (ex)
+                    log.warn("[SECURITY] BINDING_ERROR - User: [" + username + "] submitted invalid Provider identifier: [" + sanitizedInput + "]");
+                    
+                    // 4. Throw a generic exception without exposing internal error messages
+                    throw new IllegalArgumentException("Provider not found for provided input.");
+                }
+            }
+        } else {
+            setValue(null);
+        }
+    }
 	
 	@Override
 	public String getAsText() {

@@ -24,17 +24,22 @@ import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.appointmentscheduling.Appointment;
 import org.openmrs.module.appointmentscheduling.Appointment.AppointmentStatus;
+import org.openmrs.module.appointmentscheduling.AppointmentBlock;
+import org.openmrs.module.appointmentscheduling.AppointmentSchedulingConstants;
 import org.openmrs.module.appointmentscheduling.AppointmentType;
+import org.openmrs.module.appointmentscheduling.AppointmentUtils;
 import org.openmrs.module.appointmentscheduling.TimeSlot;
 import org.openmrs.module.appointmentscheduling.exception.TimeSlotFullException;
 import org.openmrs.test.BaseModuleContextSensitiveTest;
 import org.openmrs.test.Verifies;
+import org.openmrs.util.OpenmrsUtil;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -116,10 +121,18 @@ public class AppointmentServiceTest extends BaseModuleContextSensitiveTest {
 	@Test
 	@Verifies(value = "should save new appointment", method = "saveAppointment(Appointment)")
 	public void saveAppointment_shouldSaveNewAppointment() throws Exception {
+		// a brand new time slot must fall within its appointment block and not be dated in the past, so it needs a
+		// present-day parent block rather than the dataset's historical appointment block #1 (2005-01-01)
+		Date started = new Date();
+		AppointmentBlock appointmentBlock = new AppointmentBlock(started, OpenmrsUtil.getLastMomentOfDay(started),
+		    service.getAppointmentBlock(1).getProvider(), new Location(1),
+		    new HashSet<AppointmentType>(service.getAppointmentBlock(1).getTypes()));
+		appointmentBlock = service.saveAppointmentBlock(appointmentBlock);
+
 		TimeSlot timeSlot = new TimeSlot();
-		timeSlot.setStartDate(new Date());
-		timeSlot.setEndDate(new Date());
-		timeSlot.setAppointmentBlock(service.getAppointmentBlock(1));
+		timeSlot.setStartDate(started);
+		timeSlot.setEndDate(OpenmrsUtil.getLastMomentOfDay(started));
+		timeSlot.setAppointmentBlock(appointmentBlock);
 		service.saveTimeSlot(timeSlot);
 		AppointmentType appointmentType = service.getAppointmentType(1);
 		Appointment appointment = new Appointment(timeSlot, new Visit(1),
@@ -663,5 +676,171 @@ public class AppointmentServiceTest extends BaseModuleContextSensitiveTest {
 				.getLateAppointments(fromDate, toDate, null, null, null);
 		assertEquals(1, appointments.size());
 
+	}
+
+	// ========== CONFIDENTIAL ACCESS CONTROL TESTS ==========
+
+	@Test
+	public void getAppointment_shouldReturnConfidentialAppointmentForPrivilegedUser() throws Exception {
+		// Admin (standaard testgebruiker) heeft alle privileges
+		// Appointment 1 heeft appointment_type_id=1 (confidential)
+		Appointment appointment = service.getAppointment(1);
+		assertNotNull(appointment);
+		assertTrue(appointment.getAppointmentType().isConfidential());
+	}
+
+	@Test
+	public void getAppointment_shouldThrowExceptionForConfidentialAppointmentWithoutPrivilege() throws Exception {
+		Context.becomeUser("butch"); // gebruiker zonder confidential privilege
+		Context.addProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENTS);
+		Context.addProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENT_TYPES);
+		try {
+			service.getAppointment(1); // appointment met confidential type
+			Assert.fail("Should have thrown APIAuthenticationException");
+		} catch (org.openmrs.api.APIAuthenticationException e) {
+			// verwacht
+		} finally {
+			Context.removeProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENTS);
+			Context.removeProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENT_TYPES);
+			Context.logout();
+			authenticate();
+		}
+	}
+
+	@Test
+	public void getAppointment_shouldReturnNonConfidentialAppointmentWithoutPrivilege() throws Exception {
+		// Appointment 3 heeft appointment_type_id=2 (confidential=0)
+		// Moet gewoon werken zonder confidential privilege
+		Appointment appointment = service.getAppointment(3);
+		assertNotNull(appointment);
+		Assert.assertFalse(appointment.getAppointmentType().isConfidential());
+	}
+
+	@Test
+	public void getAppointmentByUuid_shouldThrowExceptionForConfidentialWithoutPrivilege() throws Exception {
+		Context.becomeUser("butch"); // gebruiker zonder confidential privilege
+		Context.addProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENTS);
+		Context.addProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENT_TYPES);
+
+		try {
+			// UUID van appointment 1, type confidential
+			service.getAppointmentByUuid("c0c579b0-8e59-401d-8a4a-976a0b183601");
+			Assert.fail("Should have thrown APIAuthenticationException");
+		} catch (org.openmrs.api.APIAuthenticationException e) {
+			// verwacht
+		} finally {
+			Context.removeProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENTS);
+			Context.removeProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENT_TYPES);
+			Context.logout();
+			authenticate();
+		}
+	}
+
+	@Test
+	public void getAllAppointments_shouldFilterConfidentialForUnprivilegedUser() throws Exception {
+		Context.becomeUser("butch"); // gebruiker zonder confidential privilege
+		Context.addProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENTS);
+		Context.addProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENT_TYPES);
+
+		try {
+			List<Appointment> appointments = service.getAllAppointments();
+			// Geen enkele teruggegeven afspraak mag confidential zijn
+			for (Appointment appointment : appointments) {
+				Assert.assertFalse(
+						"Confidential appointment leaked to unprivileged user",
+						appointment.getAppointmentType().isConfidential()
+				);
+			}
+		} finally {
+			Context.removeProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENTS);
+			Context.removeProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENT_TYPES);
+			Context.logout();
+			authenticate();
+		}
+	}
+
+	@Test
+	public void getAllAppointments_shouldIncludeConfidentialForPrivilegedUser() throws Exception {
+		// Admin heeft alle privileges, dus confidential afspraken moeten zichtbaar zijn
+		List<Appointment> appointments = service.getAllAppointments();
+		boolean foundConfidential = false;
+		for (Appointment appointment : appointments) {
+			if (appointment.getAppointmentType().isConfidential()) {
+				foundConfidential = true;
+				break;
+			}
+		}
+		assertTrue("Privileged user should see confidential appointments", foundConfidential);
+	}
+
+	@Test
+	public void getAppointmentsOfPatient_shouldFilterConfidentialForUnprivilegedUser() throws Exception {
+		Context.becomeUser("butch"); // gebruiker zonder confidential privilege
+		Context.addProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENTS);
+		Context.addProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENT_TYPES);
+
+		try {
+			List<Appointment> appointments = service.getAppointmentsOfPatient(new Patient(1));
+			for (Appointment appointment : appointments) {
+				Assert.assertFalse(
+						"Confidential appointment leaked to unprivileged user",
+						appointment.getAppointmentType().isConfidential()
+				);
+			}
+		} finally {
+			Context.removeProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENTS);
+			Context.removeProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENT_TYPES);
+			Context.logout();
+			authenticate();
+		}
+	}
+
+	@Test
+	public void getAppointmentsByConstraints_shouldFilterConfidentialForUnprivilegedUser() throws Exception {
+		Context.becomeUser("butch"); // gebruiker zonder confidential privilege
+		Context.addProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENTS);
+		Context.addProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENT_TYPES);
+
+		try {
+			List<Appointment> appointments = service.getAppointmentsByConstraints(
+					null, null, null, null, null, null,
+					new ArrayList<AppointmentStatus>()
+			);
+			for (Appointment appointment : appointments) {
+				Assert.assertFalse(
+						"Confidential appointment leaked to unprivileged user",
+						appointment.getAppointmentType().isConfidential()
+				);
+			}
+		} finally {
+			Context.removeProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENTS);
+			Context.removeProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENT_TYPES);
+			Context.logout();
+			authenticate();
+		}
+	}
+
+	@Test
+	public void getLastAppointment_shouldThrowExceptionForConfidentialWithoutPrivilege() throws Exception {
+		// Patient 1 heeft appointments met type 1 (confidential)
+		// getLastAppointment geeft de meest recente terug
+		Context.becomeUser("butch"); // gebruiker zonder confidential privilege
+		Context.addProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENTS);
+		Context.addProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENT_TYPES);
+
+		try {
+			Appointment last = service.getLastAppointment(new Patient(1));
+			// Als er een appointment is, mag het niet confidential zijn
+			if (last != null) {
+				Assert.assertFalse(last.getAppointmentType().isConfidential());
+			}
+		} catch (org.openmrs.api.APIAuthenticationException e) {
+			// ook acceptabel - confidential geblokkeerd
+		} finally {
+			Context.removeProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENTS);
+			Context.removeProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENT_TYPES);
+			Context.logout();
+			authenticate();
+		}
 	}
 }
