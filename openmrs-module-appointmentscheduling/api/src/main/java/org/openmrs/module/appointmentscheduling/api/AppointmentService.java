@@ -988,7 +988,7 @@ public interface AppointmentService extends OpenmrsService {
 	 * @param appointment
 	 * @return
 	 */
-	@Authorized
+	@Authorized(AppointmentUtils.PRIV_VIEW_APPOINTMENTS)
 	List<AppointmentStatusHistory> getAppointmentStatusHistories(Appointment appointment);
 
 	/**
@@ -996,7 +996,7 @@ public interface AppointmentService extends OpenmrsService {
 	 * @param appointment
 	 * @return
 	 */
-	@Authorized()
+	@Authorized(AppointmentUtils.PRIV_VIEW_APPOINTMENTS)
 	AppointmentStatusHistory getMostRecentAppointmentStatusHistory(Appointment appointment);
 	/**
 	 * returns list of early appointments
@@ -1031,7 +1031,7 @@ public interface AppointmentService extends OpenmrsService {
 	 * @return a list of provider schedule objects.
 	 * <strong>Should</strong> get all provider schedule
 	 */
-	@Authorized()
+	@Authorized(AppointmentUtils.PRIV_VIEW_PROVIDER_SCHEDULES)
 	List<ProviderSchedule> getAllProviderSchedules();
 
 	/**
@@ -1061,7 +1061,7 @@ public interface AppointmentService extends OpenmrsService {
 	 * @return the provider schedule object found with the given uuid, else null.
 	 * <strong>Should</strong> get correct provider schedule
 	 */
-	@Authorized()
+	@Authorized(AppointmentUtils.PRIV_VIEW_PROVIDER_SCHEDULES)
 	ProviderSchedule getProviderScheduleByUuid(String uuid);
 
 	/**
@@ -1110,10 +1110,10 @@ public interface AppointmentService extends OpenmrsService {
 	@Authorized(AppointmentUtils.PRIV_VIEW_PROVIDER_SCHEDULES)
 	List<ProviderSchedule> getProviderSchedulesByConstraints(Location locations, Provider provider, List<AppointmentType> appointmentTypes);
 
-	@Authorized
+	@Authorized(AppointmentUtils.PRIV_VIEW_APPOINTMENT_BLOCKS)
 	TimeSlot getTimeslotForAppointment(Location location, Provider provider, AppointmentType type, Date appointmentDate);
 
-	@Authorized
+	@Authorized(AppointmentUtils.PRIV_MANAGE_APPOINTMENT_BLOCKS)
 	TimeSlot createTimeSlotUsingProviderSchedule(Date appointmentDate, Provider provider, Location location);
 
 }

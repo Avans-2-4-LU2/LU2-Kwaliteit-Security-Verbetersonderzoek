@@ -1,5 +1,6 @@
 package org.openmrs.module.appointmentscheduling.api.impl;
 
+import org.openmrs.api.APIAuthenticationException;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.appointmentscheduling.Appointment;
 import org.openmrs.module.appointmentscheduling.AppointmentSchedulingConstants;
@@ -18,7 +19,10 @@ public class AppointmentConfidentialityServiceImpl
         if (isConfidentialAppointment(appointment)
                 && !Context.hasPrivilege(
                 AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS)) {
-            return null;
+
+            throw new APIAuthenticationException(
+                    "Privilege required: "
+                            + AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS);
         }
 
         return appointment;

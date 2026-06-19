@@ -236,14 +236,20 @@ public class DWRAppointmentService {
 		if (appointmentId == null)
 			return false;
 		else {
-			Appointment appointment = Context.getService(AppointmentService.class).getAppointment(appointmentId);
+			Appointment appointment;
+			try {
+				appointment = Context.getService(AppointmentService.class).getAppointment(appointmentId);
+			} catch (org.openmrs.api.APIAuthenticationException e) {
+				// Confidential appointment - current user lacks the privilege; treat as no open consultation.
+				return false;
+			}
 			if (appointment == null) {
 				return false;
 			}
 			Provider provider = appointment.getTimeSlot().getAppointmentBlock().getProvider();
 
 			List<Appointment> inconsultationAppointments = Context.getService(AppointmentService.class)
-			        .getAppointmentsByConstraints(null, null, null, provider, null, AppointmentStatus.INCONSULTATION);
+					.getAppointmentsByConstraints(null, null, null, provider, null, AppointmentStatus.INCONSULTATION);
 
 			return (inconsultationAppointments.size() != 0);
 		}
@@ -260,16 +266,22 @@ public class DWRAppointmentService {
 		if (patientId == null)
 			return false;
 		else {
-			Appointment appointment = Context.getService(AppointmentService.class).getLastAppointment(
-			    Context.getPatientService().getPatient(patientId));
+			Appointment appointment;
+			try {
+				appointment = Context.getService(AppointmentService.class).getLastAppointment(
+						Context.getPatientService().getPatient(patientId));
+			} catch (org.openmrs.api.APIAuthenticationException e) {
+				// Confidential last appointment - current user lacks the privilege; treat as no open consultation.
+				return false;
+			}
 			if (appointment == null) {
 				return false;
 			}
 			Provider provider = appointment.getTimeSlot().getAppointmentBlock().getProvider();
-			
+
 			List<Appointment> inconsultationAppointments = Context.getService(AppointmentService.class)
-			        .getAppointmentsByConstraints(null, null, null, provider, null, AppointmentStatus.INCONSULTATION);
-			
+					.getAppointmentsByConstraints(null, null, null, provider, null, AppointmentStatus.INCONSULTATION);
+
 			return (inconsultationAppointments.size() != 0);
 		}
 	}
