@@ -512,7 +512,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	@Override
 	@Transactional(readOnly = true)
 	public List<Appointment> getAppointmentsInTimeSlot(TimeSlot timeSlot) {
-		return removeConfidentialAppointmentsIfNotAuthorized(getAppointmentDAO().getAppointmentsInTimeSlot(timeSlot));
+		return appointmentConfidentialityService.removeConfidentialAppointmentsIfNotAuthorized(getAppointmentDAO().getAppointmentsInTimeSlot(timeSlot));
 	}
 
 	@Override
@@ -974,7 +974,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	@Transactional(readOnly = true)
 	public List<Appointment> getAppointmentsByStatus(
 			List<AppointmentStatus> states) {
-		return removeConfidentialAppointmentsIfNotAuthorized(appointmentDAO.getAppointmentsByStates(states));
+		return appointmentConfidentialityService.removeConfidentialAppointmentsIfNotAuthorized(appointmentDAO.getAppointmentsByStates(states));
 	}
 
 	@Override
