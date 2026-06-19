@@ -11,6 +11,7 @@ These images are referenced by `../compliance-report.md`.
 | `environments.png` | Environments list (`Test` and `Production`) | 8.31 |
 | `environments cofiguration.png` | Production deployment protection rules (required reviewers, prevent self-review, wait timer, `main`-only, no admin bypass) | 8.31 |
 | `Artifact and log.png` | Actions artifact and log retention (90 days) | 5.23 |
+| `CodeQL.png` | Code scanning (CodeQL) findings list on `branch:main` — 18 open alerts, mostly in vendored third-party JS; evidence the SAST gate is live and producing results | 8.25 / 8.29 |
 
 ## SR-03 validation evidence
 

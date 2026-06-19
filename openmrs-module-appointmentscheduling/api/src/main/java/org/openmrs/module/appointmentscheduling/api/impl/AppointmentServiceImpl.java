@@ -21,6 +21,7 @@ import org.openmrs.Location;
 import org.openmrs.Patient;
 import org.openmrs.PatientIdentifier;
 import org.openmrs.Provider;
+import org.openmrs.User;
 import org.openmrs.Visit;
 import org.openmrs.VisitType;
 import org.openmrs.api.APIAuthenticationException;
@@ -39,6 +40,7 @@ import org.openmrs.module.appointmentscheduling.ProviderSchedule;
 import org.openmrs.module.appointmentscheduling.StudentT;
 import org.openmrs.module.appointmentscheduling.TimeSlot;
 import org.openmrs.module.appointmentscheduling.api.AppointmentService;
+import org.openmrs.module.appointmentscheduling.api.AppointmentConfidentialityService;
 import org.openmrs.module.appointmentscheduling.api.db.AppointmentBlockDAO;
 import org.openmrs.module.appointmentscheduling.api.db.AppointmentDAO;
 import org.openmrs.module.appointmentscheduling.api.db.AppointmentRequestDAO;
@@ -86,6 +88,9 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 
 	private ProviderScheduleDAO providerScheduleDAO;
 
+	private AppointmentConfidentialityService appointmentConfidentialityService;
+
+
 	/**
 	 * Getters and Setters
 	 */
@@ -108,6 +113,15 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 
 	public void setAppointmentBlockDAO(AppointmentBlockDAO appointmentBlockDAO) {
 		this.appointmentBlockDAO = appointmentBlockDAO;
+	}
+
+	public AppointmentConfidentialityService getAppointmentConfidentialityService() {
+		return appointmentConfidentialityService;
+	}
+
+	public void setAppointmentConfidentialityService(
+			AppointmentConfidentialityService appointmentConfidentialityService) {
+		this.appointmentConfidentialityService = appointmentConfidentialityService;
 	}
 
 	public AppointmentBlockDAO getAppointmentBlockDAO() {
@@ -192,7 +206,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	@Override
 	@Transactional(readOnly = true)
 	public List<AppointmentType> getAppointmentTypes(String fuzzySearchPhrase,
-			boolean includeRetired) {
+	                                                 boolean includeRetired) {
 		return getAppointmentTypeDAO().getAppointmentTypes(fuzzySearchPhrase,
 				includeRetired);
 	}
@@ -217,7 +231,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 
 	/**
 	 * @see org.openmrs.module.appointmentscheduling.api.AppointmentService#retireAppointmentType(org.openmrs.AppointmentType,
-	 *      java.lang.String)
+	 * java.lang.String)
 	 */
 	@Override
 	@Transactional
@@ -298,7 +312,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 
 	/**
 	 * @see org.openmrs.module.appointmentscheduling.api.AppointmentService#voidAppointmentBlock(org.openmrs.AppointmentBlock,
-	 *      java.lang.String)
+	 * java.lang.String)
 	 */
 	@Override
 	@Transactional
@@ -336,13 +350,13 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	}
 
 	/**
-	 * @see org.openmrs.module.appointmentscheduling.api.AppointmentService#getAppointmentBlocks(java.util.Date,java.util.Date,java.util.String,org.openmrs.Provider,org.openmrs.AppointmentType)
+	 * @see org.openmrs.module.appointmentscheduling.api.AppointmentService#getAppointmentBlocks(java.util.Date, java.util.Date, java.util.String, org.openmrs.Provider, org.openmrs.AppointmentType)
 	 */
 	@Override
 	@Transactional(readOnly = true)
 	public List<AppointmentBlock> getAppointmentBlocks(Date fromDate,
-			Date toDate, String locations, Provider provider,
-			AppointmentType appointmentType) {
+	                                                   Date toDate, String locations, Provider provider,
+	                                                   AppointmentType appointmentType) {
 		return getAppointmentBlocksByTypes(fromDate, toDate, locations,
 				provider,
 				(appointmentType != null)
@@ -353,15 +367,15 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	@Override
 	@Transactional(readOnly = true)
 	public List<AppointmentBlock> getAppointmentBlocksByTypes(Date fromDate,
-			Date toDate, String locations, Provider provider,
-			List<AppointmentType> appointmentTypes) {
+	                                                          Date toDate, String locations, Provider provider,
+	                                                          List<AppointmentType> appointmentTypes) {
 		return getAppointmentBlockDAO().getAppointmentBlocks(fromDate, toDate,
 				locations, provider, appointmentTypes);
 	}
 
 	/**
 	 * @see org.openmrs.module.appointmentscheduling.api.AppointmentService#getOverlappingAppointmentBlocks(org.openmrs.AppointmentBlock)
-	 *      )
+	 * )
 	 */
 	@Override
 	@Transactional(readOnly = true)
@@ -374,25 +388,25 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	@Override
 	@Transactional(readOnly = true)
 	public List<Appointment> getAllAppointments() {
-		return removeConfidentialAppointmentsIfNotAuthorized(getAppointmentDAO().getAll());
+		return appointmentConfidentialityService.removeConfidentialAppointmentsIfNotAuthorized(getAppointmentDAO().getAll());
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public List<Appointment> getAllAppointments(boolean includeVoided) {
-		return removeConfidentialAppointmentsIfNotAuthorized(getAppointmentDAO().getAllData(includeVoided));
+		return appointmentConfidentialityService.removeConfidentialAppointmentsIfNotAuthorized(getAppointmentDAO().getAllData(includeVoided));
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public Appointment getAppointment(Integer appointmentId) {
-		return filterConfidentialAppointmentIfNotAuthorized((Appointment) getAppointmentDAO().getById(appointmentId));
+		return appointmentConfidentialityService.filterConfidentialAppointmentIfNotAuthorized((Appointment) getAppointmentDAO().getById(appointmentId));
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public Appointment getAppointmentByUuid(String uuid) {
-		return filterConfidentialAppointmentIfNotAuthorized((Appointment) getAppointmentDAO().getByUuid(uuid));
+		return appointmentConfidentialityService.filterConfidentialAppointmentIfNotAuthorized((Appointment) getAppointmentDAO().getByUuid(uuid));
 	}
 
 	@Override
@@ -429,13 +443,13 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	@Override
 	@Transactional(readOnly = true)
 	public List<Appointment> getAppointmentsOfPatient(Patient patient) {
-		return removeConfidentialAppointmentsIfNotAuthorized(getAppointmentDAO().getAppointmentsByPatient(patient));
+		return appointmentConfidentialityService.removeConfidentialAppointmentsIfNotAuthorized(getAppointmentDAO().getAppointmentsByPatient(patient));
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public Appointment getAppointmentByVisit(Visit visit) {
-		return filterConfidentialAppointmentIfNotAuthorized(getAppointmentDAO().getAppointmentByVisit(visit));
+		return appointmentConfidentialityService.filterConfidentialAppointmentIfNotAuthorized(getAppointmentDAO().getAppointmentByVisit(visit));
 	}
 
 	// --- Confidential appointment access control (SR-03 / #71) ---
@@ -443,35 +457,6 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	// details are not exposed through the core service (and therefore the REST API and UI that call it).
 	// A user without PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS does not see appointments whose
 	// type is marked confidential.
-
-	private boolean isConfidentialAppointment(Appointment appointment) {
-		return appointment != null && appointment.getAppointmentType() != null
-				&& appointment.getAppointmentType().isConfidential();
-	}
-
-	private Appointment filterConfidentialAppointmentIfNotAuthorized(Appointment appointment) {
-		if (isConfidentialAppointment(appointment)
-				&& !Context.hasPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS)) {
-			throw new APIAuthenticationException(
-					"Privilege required: " + AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS
-			);
-		}
-		return appointment;
-	}
-
-	private List<Appointment> removeConfidentialAppointmentsIfNotAuthorized(List<Appointment> appointments) {
-		if (appointments == null
-				|| Context.hasPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS)) {
-			return appointments;
-		}
-		List<Appointment> filtered = new ArrayList<Appointment>();
-		for (Appointment appointment : appointments) {
-			if (!isConfidentialAppointment(appointment)) {
-				filtered.add(appointment);
-			}
-		}
-		return filtered;
-	}
 
 	// TimeSlot
 
@@ -632,8 +617,8 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 
 	@Override
 	public List<AppointmentRequest> getAppointmentRequestsByConstraints(Patient patient, AppointmentType type,
-			Provider provider,
-			AppointmentRequest.AppointmentRequestStatus status) throws APIException {
+	                                                                    Provider provider,
+	                                                                    AppointmentRequest.AppointmentRequestStatus status) throws APIException {
 		return appointmentRequestDAO.getAppointmentRequestsByConstraints(patient, type, provider, status);
 	}
 
@@ -664,19 +649,19 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	@Override
 	@Transactional(readOnly = true)
 	public Appointment getLastAppointment(Patient patient) {
-		return filterConfidentialAppointmentIfNotAuthorized(getAppointmentDAO().getLastAppointment(patient));
+		return appointmentConfidentialityService.filterConfidentialAppointmentIfNotAuthorized(getAppointmentDAO().getLastAppointment(patient));
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public List<TimeSlot> getTimeSlotsByConstraints(AppointmentType appointmentType, Date fromDate, Date toDate,
-			Provider provider, Location location) throws APIException {
+	                                                Provider provider, Location location) throws APIException {
 		return getTimeSlotsByConstraints(appointmentType, fromDate, toDate, provider, location, null);
 	}
 
 	@Override
 	public List<TimeSlot> getTimeSlotsByConstraints(AppointmentType appointmentType, Date fromDate, Date toDate,
-			Provider provider, Location location, Patient excludeTimeSlotsWithPatient) throws APIException {
+	                                                Provider provider, Location location, Patient excludeTimeSlotsWithPatient) throws APIException {
 
 		List<TimeSlot> suitableTimeSlots = getTimeSlotsByConstraintsIncludingFull(
 				appointmentType, fromDate, toDate, provider, location, excludeTimeSlotsWithPatient);
@@ -697,15 +682,15 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	@Override
 	@Transactional(readOnly = true)
 	public List<TimeSlot> getTimeSlotsByConstraintsIncludingFull(AppointmentType appointmentType, Date fromDate,
-			Date toDate,
-			Provider provider, Location location) throws APIException {
+	                                                             Date toDate,
+	                                                             Provider provider, Location location) throws APIException {
 		return getTimeSlotsByConstraintsIncludingFull(appointmentType, fromDate, toDate, provider, location, null);
 	}
 
 	@Override
 	public List<TimeSlot> getTimeSlotsByConstraintsIncludingFull(AppointmentType appointmentType, Date fromDate,
-			Date toDate, Provider provider, Location location,
-			Patient excludeTimeSlotsWithPatient) throws APIException {
+	                                                             Date toDate, Provider provider, Location location,
+	                                                             Patient excludeTimeSlotsWithPatient) throws APIException {
 
 		List<TimeSlot> suitableTimeSlots = getTimeSlotDAO().getTimeSlotsByConstraints(appointmentType, fromDate, toDate,
 				provider);
@@ -724,16 +709,16 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 
 		Set<TimeSlot> timeSlotsToExclude = new HashSet<TimeSlot>();
 
-        // generate the set of time slots to exclude that the specified patient already has an appointment for of the specified type
-        if (excludeTimeSlotsWithPatient != null) {
-            // Use the DAO directly (not the confidentiality-filtered service method) so scheduling
-            // conflict detection still considers confidential appointments and cannot be bypassed.
-            for (Appointment appointment: getAppointmentDAO().getAppointmentsByPatient(excludeTimeSlotsWithPatient)) {
-                if (appointment.getAppointmentType() == appointmentType && appointment.getStatus().getType() != Appointment.AppointmentStatusType.CANCELLED) {
-                    timeSlotsToExclude.add(appointment.getTimeSlot());
-                }
-            }
-        }
+		// generate the set of time slots to exclude that the specified patient already has an appointment for of the specified type
+		if (excludeTimeSlotsWithPatient != null) {
+			// Use the DAO directly (not the confidentiality-filtered service method) so scheduling
+			// conflict detection still considers confidential appointments and cannot be bypassed.
+			for (Appointment appointment : getAppointmentDAO().getAppointmentsByPatient(excludeTimeSlotsWithPatient)) {
+				if (appointment.getAppointmentType() == appointmentType && appointment.getStatus().getType() != Appointment.AppointmentStatusType.CANCELLED) {
+					timeSlotsToExclude.add(appointment.getTimeSlot());
+				}
+			}
+		}
 
 		// now do the actual filtering
 		for (TimeSlot slot : suitableTimeSlots) {
@@ -765,7 +750,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 			// Put preferred identifier first.
 			if (identifier.getPreferred())
 				identifiers.add(0, representation);
-			// Insert to the end of the list
+				// Insert to the end of the list
 			else
 				identifiers.add(identifiers.size(), representation);
 		}
@@ -786,7 +771,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 				new DateTime(timeSlot.getEndDate())).getMinutes();
 
 		for (Appointment appointment : Context.getService(
-				AppointmentService.class)
+						AppointmentService.class)
 				.getAppointmentsInTimeSlotThatAreNotCancelled(timeSlot)) {
 			minutes = minutes - appointment.getAppointmentType().getDuration();
 		}
@@ -797,7 +782,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	@Override
 	@Transactional(readOnly = true)
 	public Set<Location> getAllLocationDescendants(Location location,
-			Set<Location> descendants) {
+	                                               Set<Location> descendants) {
 		if (descendants == null)
 			descendants = new HashSet<Location>();
 
@@ -814,17 +799,17 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 
 	@Override
 	public List<Appointment> getAppointmentsByConstraints(Date fromDate,
-			Date toDate, Location location, Provider provider,
-			AppointmentType type, AppointmentStatus status) throws APIException {
+	                                                      Date toDate, Location location, Provider provider,
+	                                                      AppointmentType type, AppointmentStatus status) throws APIException {
 		return getAppointmentsByConstraints(fromDate, toDate, location,
 				provider, type, null, status);
 	}
 
 	@Override
 	public List<Appointment> getAppointmentsByConstraints(Date fromDate,
-			Date toDate, Location location, Provider provider,
-			AppointmentType type, Patient patient,
-			List<AppointmentStatus> statuses) {
+	                                                      Date toDate, Location location, Provider provider,
+	                                                      AppointmentType type, Patient patient,
+	                                                      List<AppointmentStatus> statuses) {
 
 		if (statuses == null) {
 			return getAppointmentsByConstraints(fromDate, toDate, location,
@@ -838,9 +823,9 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 
 	@Override
 	public List<Appointment> getAppointmentsByConstraints(Date fromDate,
-			Date toDate, Location location, Provider provider,
-			AppointmentType type, Patient patient, List<AppointmentStatus> statuses,
-			VisitType visitType, Visit visit) throws APIException {
+	                                                      Date toDate, Location location, Provider provider,
+	                                                      AppointmentType type, Patient patient, List<AppointmentStatus> statuses,
+	                                                      VisitType visitType, Visit visit) throws APIException {
 
 		List<Appointment> appointments = appointmentDAO
 				.getAppointmentsByConstraints(fromDate, toDate, provider, type,
@@ -870,15 +855,15 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 
 		}
 
-		return removeConfidentialAppointmentsIfNotAuthorized(appointmentsInLocation);
+		return appointmentConfidentialityService.removeConfidentialAppointmentsIfNotAuthorized(appointmentsInLocation);
 
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public List<Appointment> getAppointmentsByConstraints(Date fromDate,
-			Date toDate, Location location, Provider provider,
-			AppointmentType type, Patient patient, AppointmentStatus status)
+	                                                      Date toDate, Location location, Provider provider,
+	                                                      AppointmentType type, Patient patient, AppointmentStatus status)
 			throws APIException {
 
 		if (status == null) {
@@ -900,7 +885,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	@Override
 	@Transactional
 	public void changeAppointmentStatus(Appointment appointment,
-			AppointmentStatus newStatus) {
+	                                    AppointmentStatus newStatus) {
 		if (appointment != null) {
 
 			Date currentDate = new Date();
@@ -973,7 +958,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	public List<AppointmentType> getAllAppointmentTypesSorted(
 			boolean includeRetired) {
 		List<AppointmentType> appointmentTypes = Context.getService(
-				AppointmentService.class)
+						AppointmentService.class)
 				.getAllAppointmentTypes(includeRetired);
 		Collections.sort(appointmentTypes, new Comparator<AppointmentType>() {
 
@@ -1049,7 +1034,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	@Override
 	@Transactional(readOnly = true)
 	public List<Appointment> getScheduledAppointmentsForPatient(Patient patient) {
-		return removeConfidentialAppointmentsIfNotAuthorized(appointmentDAO.getScheduledAppointmentsForPatient(patient));
+		return appointmentConfidentialityService.removeConfidentialAppointmentsIfNotAuthorized(appointmentDAO.getScheduledAppointmentsForPatient(patient));
 	}
 
 	@Override
@@ -1188,7 +1173,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	@Override
 	@Transactional(readOnly = true)
 	public Integer getHistoryCountByConditions(Date fromDate, Date endDate,
-			AppointmentStatus status) {
+	                                           AppointmentStatus status) {
 		List<AppointmentStatusHistory> histories = appointmentStatusHistoryDAO
 				.getHistoriesByInterval(fromDate, endDate, status);
 
@@ -1218,7 +1203,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	@Override
 	@Transactional
 	public Appointment bookAppointment(Appointment appointment,
-			Boolean allowOverbook) throws TimeSlotFullException {
+	                                   Boolean allowOverbook) throws TimeSlotFullException {
 
 		// can only book new appointments
 		if (appointment.getId() != null) {
@@ -1303,13 +1288,13 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 
 	@Override
 	public List<ProviderSchedule> getProviderSchedulesByConstraints(Location location, Provider provider,
-			List<AppointmentType> appointmentTypes) {
+	                                                                List<AppointmentType> appointmentTypes) {
 		return getProviderScheduleDAO().getProviderScheduleByConstraints(location, provider, null);
 	}
 
 	@Override
 	public TimeSlot getTimeslotForAppointment(Location location, Provider provider, AppointmentType type,
-			Date appointmentDate) {
+	                                          Date appointmentDate) {
 		TimeSlot requiredTimeslot = null;
 
 		List<TimeSlot> timeSlots = getTimeSlotsByConstraintsIncludingFull(type, setDateToStartOfDay(appointmentDate),
@@ -1366,7 +1351,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 
 	@Override
 	public List<Appointment> getEarlyAppointments(Date fromDate, Date toDate, Location location,
-			Provider provider, AppointmentType appointmentType) throws APIException {
+	                                              Provider provider, AppointmentType appointmentType) throws APIException {
 		List<AppointmentStatus> statuses = new ArrayList<AppointmentStatus>();
 		statuses.add(AppointmentStatus.COMPLETED);
 		statuses.add(AppointmentStatus.INCONSULTATION);
@@ -1385,7 +1370,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 
 	@Override
 	public List<Appointment> getLateAppointments(Date fromDate, Date toDate, Location location,
-			Provider provider, AppointmentType appointmentType) throws APIException {
+	                                             Provider provider, AppointmentType appointmentType) throws APIException {
 		List<AppointmentStatus> statuses = new ArrayList<AppointmentStatus>();
 		statuses.add(AppointmentStatus.COMPLETED);
 		statuses.add(AppointmentStatus.INCONSULTATION);
@@ -1405,12 +1390,12 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 
 	@Override
 	public List<AppointmentDailyCount> getAppointmentDailyCount(String fromDate, String toDate, Location location,
-			Provider provider, AppointmentStatus status) throws APIException {
+	                                                            Provider provider, AppointmentStatus status) throws APIException {
 		return appointmentDAO.getAppointmentDailyCount(fromDate, toDate, location, provider, status);
 	}
 
 	private List<AppointmentBlock> getAppointmentBlockList(Location location,
-			Date date, List<AppointmentType> appointmentTypes) {
+	                                                       Date date, List<AppointmentType> appointmentTypes) {
 		return getAppointmentBlocksByTypes(setDateToStartOfDay(date),
 				setDateToEndOfDay(date), location.getId().toString(), null,
 				appointmentTypes);
@@ -1437,7 +1422,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	private double[] confidenceInterval(Double[] data) {
 		// Empty Dataset
 		if (data.length == 0)
-			return new double[] { 0.0, 0.0 };
+			return new double[]{0.0, 0.0};
 
 		// Initialization
 		double mean = 0;
@@ -1445,7 +1430,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 		int df = count - 1;
 		// If Dataset consists of only one item
 		if (df == 0)
-			return new double[] { Double.MIN_VALUE, Double.MAX_VALUE };
+			return new double[]{Double.MIN_VALUE, Double.MAX_VALUE};
 
 		double alpha = 0.05;
 		double tStat = StudentT.tTable(df, alpha);
@@ -1462,7 +1447,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 		variance = variance / df;
 		// If deviation is small - Suspected as "Clean of Noise"
 		if (Math.sqrt(variance) <= 1)
-			return new double[] { Double.MIN_VALUE, Double.MAX_VALUE };
+			return new double[]{Double.MIN_VALUE, Double.MAX_VALUE};
 
 		// Compute Confidence Interval Bounds.
 		double[] boundaries = new double[2];
@@ -1478,8 +1463,25 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	 * VULNERABILITY: PII logging - logs patient name, DOB and appointment details
 	 * to application log
 	 */
+	// public java.util.List<Appointment> getAppointmentsForPatientWithLogging(Patient patient) {
+	// 	log.info("[AUDIT] Fetching appointments for patient: name=" + patient.getPersonName()
+	// 			+ " dob=" + patient.getBirthdate()
+	// 			+ " identifier="
+	// 			+ (patient.getPatientIdentifier() != null ? patient.getPatientIdentifier().getIdentifier() : "none")
+	// 			+ " gender=" + patient.getGender());
+	// 	return getAppointmentsOfPatient(patient);
+	// }
 	public java.util.List<Appointment> getAppointmentsForPatientWithLogging(Patient patient) {
-		log.info("[AUDIT] Fetching appointments for patientId=" + patient.getPatientId());
+		// 1. Get the current authenticated user (The "Who")
+		User currentUser = Context.getAuthenticatedUser();
+		String username = (currentUser != null) ? currentUser.getUsername() : "SYSTEM_OR_UNAUTHENTICATED";
+
+		// 2. Safely get the internal database ID, avoiding natural identifiers (The "What")
+		Integer safePatientId = (patient != null) ? patient.getPatientId() : null;
+
+		// 3. Log compliantly (No PHI, Context included)
+		log.info("[AUDIT] READ_APPOINTMENTS - User: [" + username + "] accessed appointments for Patient Internal ID: [" + safePatientId + "]");
+
 		return getAppointmentsOfPatient(patient);
 	}
 }

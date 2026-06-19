@@ -13,7 +13,8 @@ security checks blocking and documents the gate set. Reference policy: `../ci-cd
 
 | Change | Type | Merged to product? |
 |--------|------|--------------------|
-| Required status checks added on `main`/`dev`: CodeQL (java-kotlin + javascript-typescript), Dependency Review, SBOM & SCA | Branch-ruleset setting | n/a (repo setting) |
+| Required status checks added on `main`/`dev`: CodeQL (Analyze java-kotlin + CodeQL/GitHub Advanced Security), Review dependency changes, Generate SBOM and run SCA scan, and Java CI with Maven / build | Branch-ruleset setting | n/a (repo setting) |
+| Branch ruleset on `dev` + `main`: require PR before merging, require status checks, block force pushes, restrict deletions | Branch-ruleset setting | n/a (repo setting) |
 | `documentation/ci-cd-security-gates.md` - gate reference + exception process | New doc | Yes |
 | This mitigation record | New doc | Yes |
 
@@ -64,20 +65,41 @@ No staged demonstration (deliberately introduced vulnerability) was used: it add
 which rewards the gate being *configured and enforced* here, and *real findings* under the security code
 review. CodeQL's actual findings on the codebase are reviewed there rather than via a synthetic test.
 
+## Final branch ruleset (enforced state)
+
+The branch ruleset targets **`dev` and `main`** (2 targets) and enforces:
+
+- **Require a pull request before merging** - no direct pushes to protected branches
+- **Require status checks to pass** - the five checks below must be green before merge
+- **Block force pushes** - history cannot be rewritten on protected branches
+- **Restrict deletions** - protected branches cannot be deleted without bypass permission
+
+![Branch ruleset on dev and main](../evidence/pushprotection%20rulesets.png)
+
+The required status checks now include **Java CI with Maven / build**, completing the gate set:
+
+| Required check | Provider |
+|----------------|----------|
+| Analyze (java-kotlin) | GitHub Actions |
+| CodeQL | GitHub Advanced Security |
+| Review dependency changes | GitHub Actions |
+| Generate SBOM and run SCA scan | GitHub Actions |
+| Java CI with Maven / build (pull_request) | Any source |
+
+![Required status checks including Java CI with Maven](../evidence/PushprotectionRules.png)
+
+> **Note on "Any source":** the Java CI build check binds as *Any source* rather than to the specific
+> "GitHub Actions" source like the other checks. This does **not** weaken enforcement - the check is still
+> required and still blocks the merge when red; "Any source" simply means GitHub accepts a status of that
+> name from any reporting source rather than pinning it to one workflow. It is recorded as a minor,
+> accepted precision nuance rather than a functional gap.
+
 ## NEN-7510:2024-2 mapping
 
 - **8.29** (security testing) - failing checks are enforced in the pipeline
 - **8.8** (technical vulnerabilities) - Dependency Review blocks new vulnerable dependencies
 - **8.32** (change management) - required checks + review make every merge controlled and traceable
 - **8.25** (secure development lifecycle) - security activities integrated into the build process
-
-## Status and remaining work
-
-- [x] Required checks set (CodeQL x2, Dependency Review, SBOM & SCA)
-- [x] Gates documented (`../ci-cd-security-gates.md`)
-- [x] Gate demonstration captured (Dependency Review / Log4Shell)
-- [ ] Add **Java CI with Maven / build** as a required check - deferred until #80 merges to `dev`
-- [ ] Capture the final branch-ruleset screenshot once the build check is required
 
 ## Notes / follow-ups
 
@@ -88,3 +110,7 @@ review. CodeQL's actual findings on the codebase are reviewed there rather than 
 - **Push protection follow-up:** enabled in settings but a live block was not reproducible (fabricated
   secrets and a real zero-scope PAT all pushed through, see Demonstration). Investigate why detection did
   not trigger on the test pushes.
+- **"Any source" binding:** the Java CI build check is required but bound as *Any source* rather than the
+  "GitHub Actions" source. Enforcement is unaffected (see note in Final branch ruleset); optionally re-pin
+  it to the specific source once the workflow has reported a status in the exact branch/context GitHub
+  needs to disambiguate.
