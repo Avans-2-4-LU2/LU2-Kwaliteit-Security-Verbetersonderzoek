@@ -35,7 +35,14 @@ public class AppointmentBlock extends BaseOpenmrsData {
 	private Location location;
 	
 	private Set<AppointmentType> types;
-	
+
+	/**
+	 * Optimistic-locking version, maintained by Hibernate. Detects concurrent edits to the same
+	 * appointment block so the second writer gets a StaleObjectStateException instead of silently
+	 * overwriting the first writer's changes (SR-04, NEN-7510 8.26/8.29).
+	 */
+	private Integer version;
+
 	public AppointmentBlock() {
 		
 	}
@@ -115,5 +122,13 @@ public class AppointmentBlock extends BaseOpenmrsData {
 	public void setTypes(Set<AppointmentType> types) {
 		this.types = types;
 	}
-	
+
+	public Integer getVersion() {
+		return version;
+	}
+
+	public void setVersion(Integer version) {
+		this.version = version;
+	}
+
 }

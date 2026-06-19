@@ -268,3 +268,38 @@ have already been committed and potentially exposed.
 
 These measures support secure software development practices and contribute
 to compliance with NEN 7510.
+
+---
+
+# Deployment Security Mitigations
+
+## Purpose
+
+Based on the accepted risks in the project's vulnerability management process, specific deployment configurations are required to mitigate residual risks associated with the OpenMRS platform and its dependencies.
+
+## Required Mitigations
+
+To securely deploy the OpenMRS Appointment Scheduling module, the following controls **MUST** be implemented in the deployment environment:
+
+### 1. Network Isolation
+* **Control:** Deploy OpenMRS on a secured hospital intranet.
+* **Rationale:** Reduces the attack surface by ensuring the application is not internet-facing, mitigating risks from vulnerabilities in Spring, Struts, and RMI deserialization.
+
+### 2. Spring Framework Hardening
+* **Control:** Ensure `RemoteInvocationSerializingExporter` is NOT configured or exposed in the OpenMRS configuration.
+* **Rationale:** Mitigates CVE-2016-1000027 (Spring RMI Unsafe Deserialization).
+* **Firewall Rule:** Restrict access to RMI ports (default 1099) to authenticated subnets only.
+
+### 3. Jackson ObjectMapper Configuration
+* **Control:** Add the JVM flag `-Djackson.enableDefaultTyping=false` to disable automatic type inference.
+* **Rationale:** Mitigates risks associated with the EOL `jackson-mapper-asl` library (CVE-2019-10202).
+
+### 4. XXE Protection
+* **Control:** Enable XXE protection by passing the following JVM startup parameter:
+  `-Dcom.sun.org.apache.xerces.impl.Constants.XERCES_FEATURE_PREFIX=http://apache.org/xml/features/disallow-doctype-decl=true`
+* **Rationale:** Mitigates XXE vulnerabilities in `dom4j` (CVE-2020-10683) and other XML parsers.
+
+### 5. Access Control and Monitoring
+* **Control:** Restrict OpenMRS administrator accounts to a minimum number of trusted personnel (e.g., 5-10) and enforce Multi-Factor Authentication (MFA).
+* **Rationale:** Mitigates the OpenMRS-web Path Traversal vulnerability (CVE-2026-40076) by ensuring only authorized users can upload modules.
+* **Monitoring:** Enable file integrity monitoring on the `/modules/` directory and log all module uploads.
