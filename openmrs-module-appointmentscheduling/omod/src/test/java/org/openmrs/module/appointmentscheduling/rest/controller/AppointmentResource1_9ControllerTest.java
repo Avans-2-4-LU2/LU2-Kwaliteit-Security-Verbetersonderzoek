@@ -7,9 +7,11 @@ import org.junit.Test;
 import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.appointmentscheduling.Appointment;
+import org.openmrs.module.appointmentscheduling.AppointmentUtils;
 import org.openmrs.module.appointmentscheduling.api.AppointmentService;
 import org.openmrs.module.webservices.rest.SimpleObject;
 import org.openmrs.module.webservices.rest.test.Util;
+import org.openmrs.module.webservices.rest.web.response.ObjectNotFoundException;
 import org.openmrs.module.webservices.rest.web.v1_0.controller.MainResourceControllerTest;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -49,6 +51,27 @@ public class AppointmentResource1_9ControllerTest
 		Assert.assertEquals("c0c579b0-8e59-401d-8a4a-976a0b183519",
 				Util.getByPath(result, "appointmentType/uuid"));
 		Assert.assertEquals(false, PropertyUtils.getProperty(result, "voided"));
+	}
+
+	@Test
+	public void shouldReturn404ForConfidentialAppointmentWhenUserLacksPrivilege() throws Exception {
+		Context.becomeUser("butch");
+		Context.addProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENTS);
+		Context.addProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENT_TYPES);
+
+		try {
+			MockHttpServletRequest req = request(RequestMethod.GET, getURI() + "/"
+					+ getUuid());
+			try {
+				handle(req);
+				Assert.fail("Confidential appointment should not be returned to a user without the privilege");
+			} catch (ObjectNotFoundException expected) {
+				// The REST layer converts the filtered null into 404 Not Found by raising ObjectNotFoundException.
+			}
+		} finally {
+			Context.removeProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENTS);
+			Context.removeProxyPrivilege(AppointmentUtils.PRIV_VIEW_APPOINTMENT_TYPES);
+		}
 	}
 
 	@Test

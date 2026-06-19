@@ -11,3 +11,14 @@ These images are referenced by `../compliance-report.md`.
 | `environments.png` | Environments list (`Test` and `Production`) | 8.31 |
 | `environments cofiguration.png` | Production deployment protection rules (required reviewers, prevent self-review, wait timer, `main`-only, no admin bypass) | 8.31 |
 | `Artifact and log.png` | Actions artifact and log retention (90 days) | 5.23 |
+
+## SR-03 validation evidence
+
+These images support `../mitigations/SR-03-confidential-appointment-access-control.md`.
+
+| File | What it shows |
+|------|---------------|
+| `SR-03 test results.png` | Earlier API validation screenshot showing `167` tests passing |
+| `SR-03 test results2.png` | Earlier re-test screenshot showing `168` tests passing |
+| `SR-03 testresults3.png` | Final API-side validation screenshot showing `172` tests passing |
+| `SR-03 testresults4.png` | Final full reactor build screenshot showing `126` omod tests and `BUILD SUCCESS` |

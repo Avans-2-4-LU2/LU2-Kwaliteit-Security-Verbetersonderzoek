@@ -22,6 +22,7 @@ import org.openmrs.api.context.Context;
 import org.openmrs.module.appointmentscheduling.Appointment;
 import org.openmrs.module.appointmentscheduling.Appointment.AppointmentStatus;
 import org.openmrs.module.appointmentscheduling.AppointmentBlock;
+import org.openmrs.module.appointmentscheduling.AppointmentSchedulingConstants;
 import org.openmrs.module.appointmentscheduling.AppointmentType;
 import org.openmrs.module.appointmentscheduling.AppointmentUtils;
 import org.openmrs.module.appointmentscheduling.TimeSlot;
@@ -149,6 +150,14 @@ public class DWRAppointmentService {
 				for (TimeSlot timeSlot : timeSlots) {
 					List<Appointment> appointmentsInTimeSlot = as.getAppointmentsInTimeSlot(timeSlot);
 					for (Appointment appointment : appointmentsInTimeSlot) {
+						// getAppointmentsInTimeSlot is intentionally unfiltered (occupancy/conflict checks need to
+						// see every appointment), but this method displays appointment content to the user, so the
+						// confidentiality privilege has to be enforced here instead.
+						if (appointment.getAppointmentType() != null && appointment.getAppointmentType().isConfidential()
+						        && !Context
+						                .hasPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS)) {
+							continue;
+						}
 						//Create an AppointmentData object
 						PatientData patientDescription = this.getPatientDescription(appointment.getPatient().getPatientId());
 						TimeSlot appointmentTimeSlot = appointment.getTimeSlot();
@@ -228,18 +237,21 @@ public class DWRAppointmentService {
 			return false;
 		else {
 			Appointment appointment = Context.getService(AppointmentService.class).getAppointment(appointmentId);
+			if (appointment == null) {
+				return false;
+			}
 			Provider provider = appointment.getTimeSlot().getAppointmentBlock().getProvider();
-			
+
 			List<Appointment> inconsultationAppointments = Context.getService(AppointmentService.class)
 			        .getAppointmentsByConstraints(null, null, null, provider, null, AppointmentStatus.INCONSULTATION);
-			
+
 			return (inconsultationAppointments.size() != 0);
 		}
 	}
-	
+
 	/**
 	 * Checks whether a provider has an ongoing open consultation
-	 * 
+	 *
 	 * @param appointmentId - The patient id from which we will its most recent appointment's
 	 *            provider
 	 * @return True if has any open consultation, False otherwise
@@ -250,6 +262,9 @@ public class DWRAppointmentService {
 		else {
 			Appointment appointment = Context.getService(AppointmentService.class).getLastAppointment(
 			    Context.getPatientService().getPatient(patientId));
+			if (appointment == null) {
+				return false;
+			}
 			Provider provider = appointment.getTimeSlot().getAppointmentBlock().getProvider();
 			
 			List<Appointment> inconsultationAppointments = Context.getService(AppointmentService.class)
