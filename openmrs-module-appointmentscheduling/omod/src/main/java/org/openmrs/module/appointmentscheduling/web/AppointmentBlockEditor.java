@@ -33,24 +33,51 @@ public class AppointmentBlockEditor extends PropertyEditorSupport {
 	 * <strong>Should</strong> set using id
 	 * <strong>Should</strong> set using uuid
 	 */
+	// public void setAsText(String text) throws IllegalArgumentException {
+	// 	AppointmentService as = Context.getService(AppointmentService.class);
+	// 	if (StringUtils.hasText(text)) {
+	// 		try {
+	// 			setValue(as.getAppointmentBlock(Integer.valueOf(text)));
+	// 		}
+	// 		catch (Exception ex) {
+	// 			AppointmentBlock ab = as.getAppointmentBlockByUuid(text);
+	// 			setValue(ab);
+	// 			if (ab == null) {
+	// 				log.error("Error setting text: " + text, ex);
+	// 				throw new IllegalArgumentException("AppointmentBlock not found: " + ex.getMessage());
+	// 			}
+	// 		}
+	// 	} else {
+	// 		setValue(null);
+	// 	}
+	// }
 	public void setAsText(String text) throws IllegalArgumentException {
-		AppointmentService as = Context.getService(AppointmentService.class);
-		if (StringUtils.hasText(text)) {
-			try {
-				setValue(as.getAppointmentBlock(Integer.valueOf(text)));
-			}
-			catch (Exception ex) {
-				AppointmentBlock ab = as.getAppointmentBlockByUuid(text);
-				setValue(ab);
-				if (ab == null) {
-					log.error("Error setting text: " + text, ex);
-					throw new IllegalArgumentException("AppointmentBlock not found: " + ex.getMessage());
-				}
-			}
-		} else {
-			setValue(null);
-		}
-	}
+        AppointmentService as = Context.getService(AppointmentService.class);
+        if (StringUtils.hasText(text)) {
+            try {
+                setValue(as.getAppointmentBlock(Integer.valueOf(text)));
+            }
+            catch (Exception ex) {
+                AppointmentBlock ab = as.getAppointmentBlockByUuid(text);
+                setValue(ab);
+                if (ab == null) {
+                    // 1. Sanitize the input to prevent CRLF Log Injection
+                    String sanitizedInput = text.replaceAll("[\r\n\t]", "_");
+                    
+                    // 2. Get the user context for the audit trail
+                    String username = Context.getAuthenticatedUser() != null ? Context.getAuthenticatedUser().getUsername() : "UNKNOWN";
+
+                    // 3. Log securely without dumping the raw stack trace (ex)
+                    log.warn("[SECURITY] BINDING_ERROR - User: [" + username + "] submitted invalid AppointmentBlock identifier: [" + sanitizedInput + "]");
+                    
+                    // 4. Throw a generic exception without exposing internal error messages
+                    throw new IllegalArgumentException("AppointmentBlock not found for provided input.");
+                }
+            }
+        } else {
+            setValue(null);
+        }
+    }
 	
 	public String getAsText() {
 		AppointmentBlock a = (AppointmentBlock) getValue();

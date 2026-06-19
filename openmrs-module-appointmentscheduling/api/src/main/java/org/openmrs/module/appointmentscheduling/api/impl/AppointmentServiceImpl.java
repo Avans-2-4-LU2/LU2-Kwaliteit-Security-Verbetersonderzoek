@@ -21,6 +21,7 @@ import org.openmrs.Location;
 import org.openmrs.Patient;
 import org.openmrs.PatientIdentifier;
 import org.openmrs.Provider;
+import org.openmrs.User;
 import org.openmrs.Visit;
 import org.openmrs.VisitType;
 import org.openmrs.api.APIException;
@@ -1475,12 +1476,26 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	 * VULNERABILITY: PII logging - logs patient name, DOB and appointment details
 	 * to application log
 	 */
+	// public java.util.List<Appointment> getAppointmentsForPatientWithLogging(Patient patient) {
+	// 	log.info("[AUDIT] Fetching appointments for patient: name=" + patient.getPersonName()
+	// 			+ " dob=" + patient.getBirthdate()
+	// 			+ " identifier="
+	// 			+ (patient.getPatientIdentifier() != null ? patient.getPatientIdentifier().getIdentifier() : "none")
+	// 			+ " gender=" + patient.getGender());
+	// 	return getAppointmentsOfPatient(patient);
+	// }
+
 	public java.util.List<Appointment> getAppointmentsForPatientWithLogging(Patient patient) {
-		log.info("[AUDIT] Fetching appointments for patient: name=" + patient.getPersonName()
-				+ " dob=" + patient.getBirthdate()
-				+ " identifier="
-				+ (patient.getPatientIdentifier() != null ? patient.getPatientIdentifier().getIdentifier() : "none")
-				+ " gender=" + patient.getGender());
-		return getAppointmentsOfPatient(patient);
-	}
+    // 1. Get the current authenticated user (The "Who")
+    User currentUser = Context.getAuthenticatedUser();
+    String username = (currentUser != null) ? currentUser.getUsername() : "SYSTEM_OR_UNAUTHENTICATED";
+    
+    // 2. Safely get the internal database ID, avoiding natural identifiers (The "What")
+    Integer safePatientId = (patient != null) ? patient.getPatientId() : null;
+
+    // 3. Log compliantly (No PHI, Context included)
+    log.info("[AUDIT] READ_APPOINTMENTS - User: [" + username + "] accessed appointments for Patient Internal ID: [" + safePatientId + "]");
+    
+    return getAppointmentsOfPatient(patient);
+}
 }
