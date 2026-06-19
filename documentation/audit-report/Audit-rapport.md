@@ -267,15 +267,30 @@ direct human supervision.
 
 ## 10. Conclusion & Advice
 
-**Does the module comply with the relevant NEN-7510:2024-2 controls and CRA obligations?** Largely
-yes, for everything within this module's own control. All four critical risks identified this audit
-are resolved, tested, and merged. Two lower-priority improvements remain open.
+**Does the module meet the security standard we measured it against?** For everything the team could
+control itself: yes. The four most serious problems we found (B-001 to B-004) have all been fixed,
+tested, and built into the system. On that basis the audit closes **🟢 Green** — nothing critical or
+high-risk is left unaddressed.
 
-| Priority | Action |
-|---|---|
-| **Now** | — (no critical or high-severity issue is currently open) |
-| **This sprint** | B-005: restrict free-text appointment notes from unauthorized staff |
-| **Later** | B-006: add denial tests for the remaining permission checks; resolve the CI check's "any source" binding (§6); decide whether this module's own input-handling code needs dedicated hardening review |
+This report also marks the **end of the project** — there is no next round of work. So the list below
+is not a to-do list of things we still plan to do. It is an honest record of **what is still left
+open**, written down so that whoever takes over the module knows exactly what they're inheriting
+instead of assuming everything is finished.
+
+### What is still open, and who should pick it up
+
+| What is still open | What it means | Who should pick it up |
+|---|---|---|
+| **The free-text notes on an appointment** (B-005, §4) | The "reason for visit" and "reason for cancellation" boxes can contain private medical details, but right now any staff member can read them — there is no restriction. This is the most serious thing still open, and it should be fixed before the module is ever used with real patients. | Whoever continues this module |
+| **Proof that "access denied" actually works** (B-006, §4) | The system has roughly 97 places where it checks whether a user is allowed to do something. We have proof that the most important one correctly blocks the wrong people; for the rest, we only tested that the right people are let in, not that the wrong people are kept out. There is no sign any of them are broken — we just haven't proven each one. | Whoever continues this module |
+| **A small imprecision in an automatic safety check** (§6) | One of the automatic checks that must pass before code can be merged is set up slightly too broadly. It still does its job and still blocks bad merges — it's just defined less precisely than it could be. | The person who owns the code repository |
+| **Known issues in shared building blocks** (§5) | A few outside software libraries this module relies on have known weaknesses, but they are supplied by the wider OpenMRS platform, not by this module — so they can only be fixed at the platform level, not here. | The OpenMRS platform team |
+| **This module's own handling of incoming data** (§2) | We checked the outside libraries for known weaknesses, but we did not separately review this module's own code for how it handles incoming data. This was outside what we set out to test; we note it here so nothing is hidden. | Whoever continues this module |
+
+**One important note on the "Green" result:** Green means every serious problem the team could fix
+*has* been fixed and checked. It does **not** mean the module is perfect. The free-text notes issue
+above (B-005) is still open, and because it can expose private medical information, it should be the
+very first thing addressed if this module is ever moved toward real-world use.
 
 ---
 
@@ -283,8 +298,8 @@ are resolved, tested, and merged. Two lower-priority improvements remain open.
 
 Every appendix below is referenced from the body text (see the section noted in brackets).
 
-- **Appendix A** — SAST output: CodeQL (referenced in §3, §6). **[TODO: export a current SARIF file —
-  not yet saved as a repository artifact.]**
+- **Appendix A** — SAST output: CodeQL (referenced in §3, §6). Screenshot:
+  `documentation/evidence/CodeQL.png`.
 - **Appendix B** — SCA / dependency alerts: `documentation/security-vulnerability-backlog.md`,
   `documentation/vulnerability-traceability-matrix.md` (referenced in §5).
 - **Appendix C** — SBOM: `openmrs-module-appointmentscheduling/bom.json` (referenced in §5, §6).
