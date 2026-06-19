@@ -30,6 +30,9 @@
 		</property>
 	</bean>
 
+    <bean id="appointmentConfidentialityService"
+          class="${project.parent.groupId}.${project.parent.artifactId}.api.impl.AppointmentConfidentialityServiceImpl"/>
+
     <bean id="appointmentService"
           class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
         <property name="transactionManager">
@@ -37,6 +40,11 @@
         </property>
         <property name="target">
             <bean class="${project.parent.groupId}.${project.parent.artifactId}.api.impl.AppointmentServiceImpl">
+
+                <property name="appointmentConfidentialityService">
+                    <ref bean="appointmentConfidentialityService" />
+                </property>
+
                 <property name="appointmentTypeDAO">
                     <bean class="${project.parent.groupId}.${project.parent.artifactId}.api.db.hibernate.HibernateAppointmentTypeDAO">
                         <property name="sessionFactory">
