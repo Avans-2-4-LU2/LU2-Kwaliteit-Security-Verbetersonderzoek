@@ -23,7 +23,12 @@ public class PatientDashboardAppointmentExtController {
 		//End the consulation
 		if (action.equals("endConsult")) {
 			Patient patient = Context.getPatientService().getPatient(patientId);
-			Appointment appointment = Context.getService(AppointmentService.class).getLastAppointment(patient);
+			Appointment appointment;
+			try {
+				appointment = Context.getService(AppointmentService.class).getLastAppointment(patient);
+			} catch (org.openmrs.api.APIAuthenticationException e) {
+				appointment = null;
+			}
 
 			// appointment is null when it does not exist, or when its type is confidential and the
 			// current user lacks the confidentiality privilege - either way there is nothing to end.
@@ -43,7 +48,12 @@ public class PatientDashboardAppointmentExtController {
 			return "redirect:/module/appointmentscheduling/appointmentList.list";
 		} else if (action.equals("startConsult")) {
 			Patient patient = Context.getPatientService().getPatient(patientId);
-			Appointment appointment = Context.getService(AppointmentService.class).getLastAppointment(patient);
+			Appointment appointment;
+			try {
+				appointment = Context.getService(AppointmentService.class).getLastAppointment(patient);
+			} catch (org.openmrs.api.APIAuthenticationException e) {
+				appointment = null;
+			}
 
 			// appointment is null when it does not exist, or when its type is confidential and the
 			// current user lacks the confidentiality privilege - either way there is nothing to start.

@@ -23,6 +23,7 @@ import org.openmrs.PatientIdentifier;
 import org.openmrs.Provider;
 import org.openmrs.Visit;
 import org.openmrs.VisitType;
+import org.openmrs.api.APIAuthenticationException;
 import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
 import org.openmrs.api.impl.BaseOpenmrsService;
@@ -451,7 +452,9 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	private Appointment filterConfidentialAppointmentIfNotAuthorized(Appointment appointment) {
 		if (isConfidentialAppointment(appointment)
 				&& !Context.hasPrivilege(AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS)) {
-			return null;
+			throw new APIAuthenticationException(
+					"Privilege required: " + AppointmentSchedulingConstants.PRIVILEGE_VIEW_CONFIDENTIAL_APPOINTMENT_DETAILS
+			);
 		}
 		return appointment;
 	}
@@ -524,7 +527,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	@Override
 	@Transactional(readOnly = true)
 	public List<Appointment> getAppointmentsInTimeSlot(TimeSlot timeSlot) {
-		return getAppointmentDAO().getAppointmentsInTimeSlot(timeSlot);
+		return removeConfidentialAppointmentsIfNotAuthorized(getAppointmentDAO().getAppointmentsInTimeSlot(timeSlot));
 	}
 
 	@Override
@@ -986,7 +989,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	@Transactional(readOnly = true)
 	public List<Appointment> getAppointmentsByStatus(
 			List<AppointmentStatus> states) {
-		return appointmentDAO.getAppointmentsByStates(states);
+		return removeConfidentialAppointmentsIfNotAuthorized(appointmentDAO.getAppointmentsByStates(states));
 	}
 
 	@Override
@@ -1476,11 +1479,7 @@ public class AppointmentServiceImpl extends BaseOpenmrsService implements Appoin
 	 * to application log
 	 */
 	public java.util.List<Appointment> getAppointmentsForPatientWithLogging(Patient patient) {
-		log.info("[AUDIT] Fetching appointments for patient: name=" + patient.getPersonName()
-				+ " dob=" + patient.getBirthdate()
-				+ " identifier="
-				+ (patient.getPatientIdentifier() != null ? patient.getPatientIdentifier().getIdentifier() : "none")
-				+ " gender=" + patient.getGender());
+		log.info("[AUDIT] Fetching appointments for patientId=" + patient.getPatientId());
 		return getAppointmentsOfPatient(patient);
 	}
 }
